@@ -3,171 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Network Operations | Juniper Mist</title>
+    <title>NAVER Style Portal | Flask Web App</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        brand: {
-                            50: '#f0fdfa',
-                            100: '#ccfbf1',
-                            500: '#14b8a6',
-                            600: '#0d9488',
-                            900: '#134e4a',
-                        },
-                        navy: {
-                            800: '#0f172a',
-                            900: '#0b0f19',
-                            950: '#060911',
+                        naver: {
+                            green: '#03C75A',
+                            hover: '#02b350',
+                            bg: '#f5f6f7',
+                            border: '#e4e8eb'
                         }
-                    },
-                    fontFamily: {
-                        mono: ['JetBrains Mono', 'Consolas', 'monospace'],
                     }
                 }
             }
         }
     </script>
 </head>
-<body class="bg-navy-950 text-slate-200 font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+<body class="bg-naver-bg text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-naver-green selection:text-white">
 
-    <!-- Header -->
-    <header class="border-b border-slate-800/80 bg-navy-900/90 backdrop-blur sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between text-xs">
-            <div class="flex items-center gap-6">
-                <div class="flex items-center gap-2 font-bold tracking-tight text-white">
-                    <span class="w-2.5 h-2.5 bg-brand-500 rounded-sm"></span>
-                    <span>JUNIPER MIST OPS</span>
-                </div>
-                <nav class="hidden md:flex items-center gap-5 text-slate-400 font-medium">
-                    <a href="#overview" class="hover:text-white transition">System Overview</a>
-                    <a href="#sle" class="hover:text-white transition">SLE Metrics</a>
-                    <a href="#topology" class="hover:text-white transition">Topology</a>
-                </nav>
+    <!-- 상단 띠 영역 -->
+    <header class="bg-white border-b border-naver-border">
+        <div class="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between text-xs text-slate-600">
+            <div class="flex items-center gap-4">
+                <span class="font-bold text-slate-900 cursor-pointer hover:underline">네이버를 시작페이지로</span>
+                <span class="text-slate-300">|</span>
+                <span class="cursor-pointer hover:underline">쥬니버네이버</span>
+                <span class="cursor-pointer hover:underline">해피빈</span>
             </div>
-
-            <div class="flex items-center gap-4 font-mono text-[11px]">
-                <div class="flex items-center gap-1.5 text-slate-400">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span>CLOUD REGION: AP-NORTHEAST-2</span>
-                </div>
+            <div class="flex items-center gap-3 font-medium">
+                <a href="https://github.com/ChoiHwanwoong/my-first-web" target="_blank" class="hover:text-slate-900 flex items-center gap-1">
+                    <i class="fa-brands fa-github text-sm"></i> GitHub Repo
+                </a>
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-6 py-10 w-full flex-1">
+    <!-- 메인 로고 & 검색창 영역 -->
+    <main class="max-w-5xl mx-auto px-4 py-8 w-full flex-1 flex flex-col items-center">
         
-        <!-- Top Status Bar -->
-        <div class="mb-8 pb-6 border-b border-slate-800/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-                <h1 class="text-xl font-bold text-white tracking-tight">Wireless & Wired Infrastructure Status</h1>
-                <p class="text-slate-400 text-xs mt-1">Enterprise Campus & Logistics Warehouse Deployment Management</p>
+        <!-- 네이버 스타일 로고 -->
+        <div class="mb-6 flex items-center gap-1 cursor-pointer select-none">
+            <span class="text-naver-green font-black text-5xl tracking-tighter">NAVER</span>
+            <span class="bg-naver-green text-white text-[10px] font-bold px-1.5 py-0.5 rounded ml-1">DEV</span>
+        </div>
+
+        <!-- 네이버 특유의 초록 테두리 검색창 -->
+        <div class="w-full max-w-2xl bg-white border-2 border-naver-green rounded-full px-5 py-3 flex items-center shadow-sm hover:shadow-md transition mb-8">
+            <i class="fa-solid fa-search text-naver-green text-lg mr-3"></i>
+            <input type="text" id="searchInput" placeholder="검색어를 입력해 주세요 (예: Flask 배포, Render 서버)" 
+                   class="w-full outline-none text-sm text-slate-800 placeholder-slate-400 bg-transparent"
+                   onkeypress="if(event.key==='Enter') handleSearch()">
+            <button onclick="handleSearch()" class="bg-naver-green hover:bg-naver-hover text-white px-5 py-1.5 rounded-full text-xs font-bold transition ml-2">
+                검색
+            </button>
+        </div>
+
+        <!-- 네이버 메인 서비스 아이콘 탭 -->
+        <div class="w-full max-w-2xl grid grid-cols-5 sm:grid-cols-8 gap-3 text-center text-xs font-medium text-slate-700 mb-10">
+            <div class="p-2.5 bg-white rounded-xl border border-naver-border hover:border-naver-green transition cursor-pointer shadow-sm">
+                <i class="fa-solid fa-envelope text-naver-green text-xl mb-1.5 block"></i> 메일
             </div>
-            <div class="flex items-center gap-3">
-                <a href="https://github.com/ChoiHwanwoong/my-first-web" target="_blank" 
-                   class="px-3.5 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono border border-slate-700 transition">
-                    GitHub Repo
-                </a>
-                <button onclick="runDiagnostics()" 
-                        class="px-3.5 py-2 rounded bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium transition">
-                    Run Health Check
-                </button>
+            <div class="p-2.5 bg-white rounded-xl border border-naver-border hover:border-naver-green transition cursor-pointer shadow-sm">
+                <i class="fa-solid fa-newspaper text-naver-green text-xl mb-1.5 block"></i> 뉴스
+            </div>
+            <div class="p-2.5 bg-white rounded-xl border border-naver-border hover:border-naver-green transition cursor-pointer shadow-sm">
+                <i class="fa-solid fa-store text-naver-green text-xl mb-1.5 block"></i> 쇼핑
+            </div>
+            <div class="p-2.5 bg-white rounded-xl border border-naver-border hover:border-naver-green transition cursor-pointer shadow-sm">
+                <i class="fa-solid fa-comments text-naver-green text-xl mb-1.5 block"></i> 카페
+            </div>
+            <div class="p-2.5 bg-white rounded-xl border border-naver-border hover:border-naver-green transition cursor-pointer shadow-sm">
+                <i class="fa-solid fa-pen-to-square text-naver-green text-xl mb-1.5 block"></i> 블로그
+            </div>
+            <div class="p-2.5 bg-white rounded-xl border border-naver-border hover:border-naver-green transition cursor-pointer shadow-sm hidden sm:block">
+                <i class="fa-solid fa-map-location-dot text-naver-green text-xl mb-1.5 block"></i> 지도
+            </div>
+            <div class="p-2.5 bg-white rounded-xl border border-naver-border hover:border-naver-green transition cursor-pointer shadow-sm hidden sm:block">
+                <i class="fa-solid fa-chart-line text-naver-green text-xl mb-1.5 block"></i> 증권
+            </div>
+            <div class="p-2.5 bg-white rounded-xl border border-naver-border hover:border-naver-green transition cursor-pointer shadow-sm hidden sm:block">
+                <i class="fa-solid fa-cloud text-naver-green text-xl mb-1.5 block"></i> MYBOX
             </div>
         </div>
 
-        <!-- Metrics Grid (엔지니어링 대시보드 스타일) -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div class="p-4 rounded border border-slate-800 bg-navy-900/50">
-                <div class="text-slate-400 text-[11px] font-mono mb-1">CONNECTIVITY SLE</div>
-                <div class="text-2xl font-bold font-mono text-white">99.4%</div>
-                <div class="text-[11px] text-emerald-400 font-mono mt-1">Nominal (Target >99.0%)</div>
-            </div>
-            <div class="p-4 rounded border border-slate-800 bg-navy-900/50">
-                <div class="text-slate-400 text-[11px] font-mono mb-1">ACTIVE ACCESS POINTS</div>
-                <div class="text-2xl font-bold font-mono text-white">128 / 128</div>
-                <div class="text-[11px] text-slate-400 font-mono mt-1">AP43 / AP32 Models</div>
-            </div>
-            <div class="p-4 rounded border border-slate-800 bg-navy-900/50">
-                <div class="text-slate-400 text-[11px] font-mono mb-1">EX SWITCH FABRIC</div>
-                <div class="text-2xl font-bold font-mono text-white">16 Nodes</div>
-                <div class="text-[11px] text-emerald-400 font-mono mt-1">Virtual Chassis Online</div>
-            </div>
-            <div class="p-4 rounded border border-slate-800 bg-navy-900/50">
-                <div class="text-slate-400 text-[11px] font-mono mb-1">CONNECTED CLIENTS</div>
-                <div class="text-2xl font-bold font-mono text-white">1,420</div>
-                <div class="text-[11px] text-slate-400 font-mono mt-1">Roaming Latency &lt;15ms</div>
-            </div>
-        </div>
-
-        <!-- Detail Table & Console View -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 하단 컨텐츠 레이아웃 (뉴스스탠드 / 프로필 카드 스타일) -->
+        <div class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-3 gap-5 text-left">
             
-            <!-- Left 2 Cols: SLE Event Table -->
-            <div class="lg:col-span-2 border border-slate-800 rounded bg-navy-900/30 overflow-hidden">
-                <div class="px-4 py-3 border-b border-slate-800 bg-navy-900/80 flex items-center justify-between text-xs font-mono">
-                    <span class="font-bold text-slate-300">RECENT TELEMETRY EVENTS</span>
-                    <span class="text-slate-500">Auto-refresh: 30s</span>
+            <!-- 뉴스/알림 카드 (2열 차지) -->
+            <div class="md:col-span-2 bg-white p-5 rounded-xl border border-naver-border shadow-sm">
+                <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 text-xs">
+                    <span class="font-bold text-slate-900 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-naver-green"></span>
+                        네이버 뉴스스탠드 스타일 알림
+                    </span>
+                    <span class="text-slate-400 font-mono">Render Cloud Status</span>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs font-mono">
-                        <thead class="bg-navy-950 text-slate-400 border-b border-slate-800">
-                            <tr>
-                                <th class="p-3">TIMESTAMP</th>
-                                <th class="p-3">DEVICE ID</th>
-                                <th class="p-3">EVENT TYPE</th>
-                                <th class="p-3">STATUS</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-800/60 text-slate-300">
-                            <tr>
-                                <td class="p-3 text-slate-500">16:01:02</td>
-                                <td class="p-3">AP-WH-ZONE-01</td>
-                                <td class="p-3">RRM Channel Optimization</td>
-                                <td class="p-3 text-emerald-400">RESOLVED</td>
-                            </tr>
-                            <tr>
-                                <td class="p-3 text-slate-500">15:58:40</td>
-                                <td class="p-3">EX3400-SW02</td>
-                                <td class="p-3">PoE Power Budget Check</td>
-                                <td class="p-3 text-slate-400">NORMAL</td>
-                            </tr>
-                            <tr>
-                                <td class="p-3 text-slate-500">15:45:12</td>
-                                <td class="p-3">AP-OFFICE-04</td>
-                                <td class="p-3">Roaming Delay Anomaly</td>
-                                <td class="p-3 text-emerald-400">SELF-HEALED</td>
-                            </tr>
-                            <tr>
-                                <td class="p-3 text-slate-500">15:30:00</td>
-                                <td class="p-3">MIST-CLOUD-GW</td>
-                                <td class="p-3">Telemetry Sync</td>
-                                <td class="p-3 text-slate-400">OK</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <ul class="space-y-2.5 text-xs text-slate-600">
+                    <li class="flex items-center justify-between hover:text-naver-green cursor-pointer">
+                        <span class="truncate">🎉 [안내] Flask 기반 개발 포털 사이트가 정상 오픈되었습니다.</span>
+                        <span class="text-slate-400 font-mono text-[11px] ml-2">오늘</span>
+                    </li>
+                    <li class="flex items-center justify-between hover:text-naver-green cursor-pointer">
+                        <span class="truncate">⚡ [기술] GitHub Webhook 자동 연동 배포 완료</span>
+                        <span class="text-slate-400 font-mono text-[11px] ml-2">방금</span>
+                    </li>
+                    <li class="flex items-center justify-between hover:text-naver-green cursor-pointer">
+                        <span class="truncate">🌐 [서버] Render PaaS 환경 정상 작동 중</span>
+                        <span class="text-slate-400 font-mono text-[11px] ml-2">정상</span>
+                    </li>
+                </ul>
             </div>
 
-            <!-- Right Col: Terminal Log Output -->
-            <div class="border border-slate-800 rounded bg-navy-950 p-4 font-mono text-xs text-slate-300 flex flex-col justify-between">
+            <!-- 네이버 로그인 카드 스타일 -->
+            <div class="bg-white p-5 rounded-xl border border-naver-border shadow-sm flex flex-col justify-between">
                 <div>
-                    <div class="text-slate-500 pb-2 mb-3 border-b border-slate-800 text-[11px] flex justify-between">
-                        <span>SYS_LOG / ENGINE</span>
-                        <span class="text-brand-500">LIVE</span>
-                    </div>
-                    <div class="space-y-1.5 text-[11px] leading-relaxed">
-                        <p class="text-slate-500">[SYSTEM] Flask application backend online.</p>
-                        <p class="text-slate-500">[SYSTEM] Connected to Render Cloud container.</p>
-                        <p class="text-emerald-400">[MIST] Telemetry stream active on Port 443.</p>
-                        <p class="text-slate-400">[MARVIS] Analyzing SLE metrics... No anomalies detected.</p>
-                    </div>
+                    <p class="text-xs text-slate-500 mb-3">네이버를 더 안전하고 편리하게 이용하세요.</p>
+                    <button onclick="alert('Flask 웹 서버 로그인 기능이 정상 동작합니다!')" 
+                            class="w-full bg-naver-green hover:bg-naver-hover text-white font-bold py-2.5 rounded text-xs transition shadow-sm flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-lock text-[11px]"></i> NAVER 로그인
+                    </button>
                 </div>
-                <div class="mt-6 pt-3 border-t border-slate-800 text-[10px] text-slate-500">
-                    Deployment Pipeline: GitHub ➔ Render PaaS
+                <div class="flex items-center justify-between text-[11px] text-slate-400 pt-3 border-t border-slate-100 mt-4">
+                    <span class="hover:underline cursor-pointer">아이디 찾기</span>
+                    <span class="hover:underline cursor-pointer">비밀번호 찾기</span>
+                    <span class="hover:underline cursor-pointer font-bold text-slate-600">회원가입</span>
                 </div>
             </div>
 
@@ -175,14 +139,25 @@
 
     </main>
 
-    <!-- Footer -->
-    <footer class="border-t border-slate-800/80 py-4 text-center text-slate-500 text-xs font-mono">
-        <p>Enterprise Network Architecture Lab — Powered by Flask & Render</p>
+    <!-- 푸터 -->
+    <footer class="bg-white border-t border-naver-border py-6 text-center text-slate-400 text-xs">
+        <div class="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div>
+                <span class="font-bold text-slate-600">NAVER Style Portal</span> | Powered by Flask & Render
+            </div>
+            <p>© NAVER Corp. & Flask Developer. All rights reserved.</p>
+        </div>
     </footer>
 
     <script>
-        function runDiagnostics() {
-            alert('Status Report:\n- Backend: Flask 3.x (Healthy)\n- Telemetry: Normal\n- All APs/Switches operating within SLE thresholds.');
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value;
+            if (query.trim() === '') {
+                alert('검색어를 입력해 주세요!');
+                return;
+            }
+            // 실제 네이버 검색 페이지로 연결
+            window.open(`https://search.naver.com/search.naver?query=${encodeURIComponent(query)}`, '_blank');
         }
     </script>
 </body>

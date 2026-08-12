@@ -112,13 +112,13 @@ def index():
 def profile_page(username=None):
     return render_template('profile.html', target_username=username)
 
-# --- 📰 6시간 주기 뉴스 API ---
+# --- 📰 1시간 주기 뉴스 API ---
 @app.route('/api/news', methods=['GET'])
 def get_hot_news():
     now = datetime.now()
     
-    # 6시간 캐시 검증
-    if NEWS_CACHE['updated_at'] and (now - NEWS_CACHE['updated_at']) < timedelta(hours=6):
+    # 1시간 캐시 검증
+    if NEWS_CACHE['updated_at'] and (now - NEWS_CACHE['updated_at']) < timedelta(hours=1):
         return jsonify({'status': 'success', 'articles': NEWS_CACHE['articles'], 'cached': True})
 
     # RSS 피드를 통한 뉴스 수집 (다음/구글 뉴스 핫이슈)

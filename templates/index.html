@@ -204,11 +204,15 @@
             loadRecommendations();
         });
 
-        // ⏱️ 상대 시간 함수 (방금 전, N분 전, N시간 전 등)
+        // ⏱️ 상대 시간 함수 (안전 파싱)
         function timeAgo(dateString) {
-            if (!dateString) return '';
+            if (!dateString) return '방금 전';
+            const formattedDate = dateString.replace(' ', 'T');
+            const past = new Date(formattedDate);
             const now = new Date();
-            const past = new Date(dateString.replace(' ', 'T'));
+
+            if (isNaN(past.getTime())) return '방금 전';
+
             const diffInSeconds = Math.floor((now - past) / 1000);
 
             if (diffInSeconds < 60) return '방금 전';
@@ -259,7 +263,6 @@
                 });
         }
 
-        // 🤖 맞춤 추천 알고리즘 로드
         function loadRecommendations() {
             fetch('/api/recommendations')
                 .then(res => res.json())
@@ -391,7 +394,7 @@
                             icon.className = "fa-regular fa-heart cursor-pointer hover:text-slate-400 transition";
                         }
                         count.innerText = `좋아요 ${data.likes}개`;
-                        loadRecommendations(); // 좋아요 누르면 추천 알고리즘 갱신
+                        loadRecommendations();
                     }
                 });
         }

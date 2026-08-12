@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session
 import sqlite3
 import os
+import feedparser
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 
@@ -12,6 +13,12 @@ UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+# --- 📰 뉴스 캐싱 변수 (6시간 주기) ---
+NEWS_CACHE = {
+    'updated_at': None,
+    'articles': []
+}
+
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -22,9 +29,15 @@ def init_db():
             username TEXT UNIQUE NOT NULL,
             name TEXT,
             email TEXT,
-            password TEXT NOT NULL
+            password TEXT NOT NULL,
+            profile_img TEXT DEFAULT ''
         )
     ''')
+
+    try:
+        cursor.execute('ALTER TABLE users ADD COLUMN profile_img TEXT DEFAULT ""')
+    except sqlite3.OperationalError:
+        pass
     
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS posts (
@@ -77,7 +90,6 @@ def init_db():
         )
     ''')
 
-    # 팔로우 테이블 (follower: 팔로우를 하는 사람, following: 팔로우를 당하는 대상)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS follows (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -100,13 +112,40 @@ def index():
 def profile_page(username=None):
     return render_template('profile.html', target_username=username)
 
+# --- 📰 6시간 주기 뉴스 API ---
+@app.route('/api/news', methods=['GET'])
+def get_hot_news():
+    now = datetime.now()
+    
+    # 6시간 캐시 검증
+    if NEWS_CACHE['updated_at'] and (now - NEWS_CACHE['updated_at']) < timedelta(hours=6):
+        return jsonify({'status': 'success', 'articles': NEWS_CACHE['articles'], 'cached': True})
+
+    # RSS 피드를 통한 뉴스 수집 (다음/구글 뉴스 핫이슈)
+    rss_url = 'https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko'
+    feed = feedparser.parse(rss_url)
+
+    articles = []
+    for entry in feed.entries[:5]: # 상위 5개 주요 뉴스
+        articles.append({
+            'title': entry.title,
+            'link': entry.link,
+            'pubDate': entry.get('published', '')
+        })
+
+    # 캐시 저장
+    NEWS_CACHE['updated_at'] = now
+    NEWS_CACHE['articles'] = articles
+
+    return jsonify({'status': 'success', 'articles': articles, 'cached': False})
+
 # --- 🔐 Auth & User APIs ---
 @app.route('/api/me', methods=['GET'])
 def get_me():
     if 'username' in session:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute('SELECT username, name, email FROM users WHERE username = ?', (session['username'],))
+        cursor.execute('SELECT username, name, email, profile_img FROM users WHERE username = ?', (session['username'],))
         row = cursor.fetchone()
         conn.close()
         if row:
@@ -114,7 +153,8 @@ def get_me():
                 'logged_in': True,
                 'username': row[0],
                 'name': row[1] or row[0],
-                'email': row[2] or ''
+                'email': row[2] or '',
+                'profile_img': row[3] or ''
             })
     return jsonify({'logged_in': False})
 
@@ -122,21 +162,19 @@ def get_me():
 def get_user_profile(username):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('SELECT username, name, email FROM users WHERE username = ?', (username,))
+    cursor.execute('SELECT username, name, email, profile_img FROM users WHERE username = ?', (username,))
     row = cursor.fetchone()
 
     if not row:
         conn.close()
         return jsonify({'status': 'error', 'message': '사용자를 찾을 수 없습니다.'}), 404
 
-    # 팔로워 수 & 팔로잉 수 수집
     cursor.execute('SELECT COUNT(*) FROM follows WHERE following = ?', (username,))
     follower_count = cursor.fetchone()[0]
 
     cursor.execute('SELECT COUNT(*) FROM follows WHERE follower = ?', (username,))
     following_count = cursor.fetchone()[0]
 
-    # 로그인한 사용자가 이 유저를 팔로우 중인지 확인
     is_following = False
     me = session.get('username')
     if me:
@@ -151,11 +189,39 @@ def get_user_profile(username):
             'username': row[0],
             'name': row[1] or row[0],
             'email': row[2] or '',
+            'profile_img': row[3] or '',
             'follower_count': follower_count,
             'following_count': following_count,
             'is_following': is_following
         }
     })
+
+@app.route('/api/profile-image', methods=['POST'])
+def update_profile_image():
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
+
+    if 'file' not in request.files:
+        return jsonify({'status': 'error', 'message': '파일이 없습니다.'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'status': 'error', 'message': '선택된 파일이 없습니다.'}), 400
+
+    if file:
+        filename = secure_filename(file.filename)
+        save_filename = f"profile_{session['username']}_{int(datetime.now().timestamp())}_{filename}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], save_filename)
+        file.save(filepath)
+        image_url = f"/static/uploads/{save_filename}"
+
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('UPDATE users SET profile_img = ? WHERE username = ?', (image_url, session['username']))
+        conn.commit()
+        conn.close()
+
+        return jsonify({'status': 'success', 'profile_img': image_url})
 
 @app.route('/api/signup', methods=['POST'])
 def signup():
@@ -297,9 +363,12 @@ def get_recommendations():
         similar_users = cursor.fetchall()
 
         for u in similar_users:
+            cursor.execute('SELECT profile_img FROM users WHERE username = ?', (u[0],))
+            p_img = cursor.fetchone()
             recommendations.append({
                 'username': u[0],
-                'reason': f"{current_user}님과 취향이 비슷함"
+                'reason': f"{current_user}님과 취향이 비슷함",
+                'profile_img': p_img[0] if p_img else ''
             })
 
     if len(recommendations) < 3:
@@ -308,7 +377,7 @@ def get_recommendations():
         
         placeholders = ', '.join(['?'] * len(exclude_users)) if exclude_users else "''"
         query_general = f'''
-            SELECT username, name FROM users 
+            SELECT username, name, profile_img FROM users 
             WHERE username NOT IN ({placeholders})
             LIMIT ?
         '''
@@ -319,7 +388,8 @@ def get_recommendations():
         for u in general_users:
             recommendations.append({
                 'username': u[0],
-                'reason': 'Woongstagram 추천 회원'
+                'reason': 'Woongstagram 추천 회원',
+                'profile_img': u[2] or ''
             })
 
     conn.close()
@@ -335,7 +405,7 @@ def get_stories():
     cursor.execute('DELETE FROM stories WHERE created_at < ?', (cutoff_time,))
     conn.commit()
 
-    cursor.execute('SELECT id, username, title, desc, image_url, created_at FROM stories ORDER BY id DESC')
+    cursor.execute('SELECT s.id, s.username, s.title, s.desc, s.image_url, s.created_at, u.profile_img FROM stories s LEFT JOIN users u ON s.username = u.username ORDER BY s.id DESC')
     rows = cursor.fetchall()
 
     user = session.get('username')
@@ -354,6 +424,7 @@ def get_stories():
             'desc': r[3],
             'image_url': r[4],
             'created_at': r[5],
+            'profile_img': r[6] or '',
             'is_viewed': is_viewed
         })
 
@@ -408,7 +479,7 @@ def mark_story_viewed(story_id):
 def get_posts():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('SELECT id, username, title, content, image_url, likes, created_at FROM posts ORDER BY id DESC')
+    cursor.execute('SELECT p.id, p.username, p.title, p.content, p.image_url, p.likes, p.created_at, u.profile_img FROM posts p LEFT JOIN users u ON p.username = u.username ORDER BY p.id DESC')
     rows = cursor.fetchall()
 
     user = session.get('username')
@@ -428,17 +499,17 @@ def get_posts():
             'image_url': r[4],
             'likes': r[5],
             'created_at': r[6],
+            'profile_img': r[7] or '',
             'is_liked': liked
         })
     conn.close()
     return jsonify({'status': 'success', 'posts': posts})
 
-# 단일 게시물 상세 조회 API
 @app.route('/api/posts/<int:post_id>', methods=['GET'])
 def get_single_post(post_id):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('SELECT id, username, title, content, image_url, likes, created_at FROM posts WHERE id = ?', (post_id,))
+    cursor.execute('SELECT p.id, p.username, p.title, p.content, p.image_url, p.likes, p.created_at, u.profile_img FROM posts p LEFT JOIN users u ON p.username = u.username WHERE p.id = ?', (post_id,))
     r = cursor.fetchone()
 
     if not r:
@@ -463,6 +534,7 @@ def get_single_post(post_id):
             'image_url': r[4],
             'likes': r[5],
             'created_at': r[6],
+            'profile_img': r[7] or '',
             'is_liked': liked
         }
     })
@@ -536,10 +608,10 @@ def toggle_like(post_id):
 def get_comments(post_id):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('SELECT id, username, content, created_at FROM comments WHERE post_id = ? ORDER BY id ASC', (post_id,))
+    cursor.execute('SELECT c.id, c.username, c.content, c.created_at, u.profile_img FROM comments c LEFT JOIN users u ON c.username = u.username WHERE c.post_id = ? ORDER BY c.id ASC', (post_id,))
     rows = cursor.fetchall()
     conn.close()
-    return jsonify({'status': 'success', 'comments': [{'id': r[0], 'username': r[1], 'content': r[2], 'created_at': r[3]} for r in rows]})
+    return jsonify({'status': 'success', 'comments': [{'id': r[0], 'username': r[1], 'content': r[2], 'created_at': r[3], 'profile_img': r[4] or ''} for r in rows]})
 
 @app.route('/api/comments', methods=['POST'])
 def add_comment():

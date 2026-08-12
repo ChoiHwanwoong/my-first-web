@@ -29,8 +29,17 @@
         
         <!-- Profile Header Area -->
         <div id="profileHeader" class="flex flex-col sm:flex-row items-center sm:items-start gap-8 pb-10 border-b border-slate-200">
-            <div class="w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-3xl uppercase shadow-md shrink-0">
-                <span id="profileAvatarText">WO</span>
+            <!-- Avatar with Change Option -->
+            <div class="relative group">
+                <div id="profileAvatarBox" class="w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-3xl uppercase shadow-md shrink-0 overflow-hidden">
+                    <span id="profileAvatarText">WO</span>
+                </div>
+                <!-- 이미지 변경 오버레이 버튼 (본인 프로필일 때 표시) -->
+                <div id="profileImageUploadBtn" class="hidden absolute inset-0 rounded-full bg-black/40 cursor-pointer flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition">
+                    <i class="fa-solid fa-camera text-xl mb-1"></i>
+                    <span class="text-[10px] font-semibold">사진 변경</span>
+                </div>
+                <input type="file" id="profileImageInput" accept="image/*" class="hidden" onchange="uploadProfileImage(this)">
             </div>
 
             <div class="flex flex-col gap-4 text-center sm:text-left flex-1">
@@ -69,25 +78,21 @@
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
 
-            <!-- Image Area -->
             <div id="modalImageArea" class="bg-slate-900 md:w-1/2 flex items-center justify-center min-h-[250px]"></div>
 
-            <!-- Content & Comments Area -->
             <div class="p-4 md:w-1/2 flex flex-col justify-between text-xs overflow-y-auto bg-white">
                 <div>
                     <div class="flex items-center gap-2 pb-3 mb-3 border-b border-slate-100">
-                        <span id="modalUserAvatar" class="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold uppercase"></span>
+                        <span id="modalUserAvatar" class="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold uppercase overflow-hidden"></span>
                         <a id="modalUsername" href="#" class="font-bold text-slate-900 hover:underline"></a>
                     </div>
                     
                     <h3 id="modalTitle" class="font-bold text-slate-900 mb-1"></h3>
                     <p id="modalContent" class="text-slate-700 leading-relaxed mb-4 pb-3 border-b border-slate-100"></p>
 
-                    <!-- Comments List -->
                     <div id="modalCommentsList" class="space-y-2 text-[11px] mb-4"></div>
                 </div>
 
-                <!-- Input -->
                 <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
                     <input type="text" id="modalCommentInput" placeholder="댓글 달기..." class="w-full text-xs outline-none bg-transparent text-slate-800 placeholder-slate-400">
                     <button id="modalCommentSubmitBtn" class="text-blue-500 font-semibold text-xs ml-2 hover:text-blue-700 whitespace-nowrap">게시</button>
@@ -96,7 +101,7 @@
         </div>
     </div>
 
-    <!-- 2. 팔로워 / 팔로잉 유저 목록 모달 -->
+    <!-- 2. 팔로워 / 팔로잉 목록 모달 -->
     <div id="followListModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl relative">
             <button onclick="closeFollowListModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -154,15 +159,26 @@
             const user = userData.user;
             document.getElementById('profileUsername').innerText = `@${user.username}`;
             document.getElementById('profileName').innerText = user.name;
-            document.getElementById('profileAvatarText').innerText = user.username.substring(0, 2);
             document.getElementById('followerCount').innerText = user.follower_count;
             document.getElementById('followingCount').innerText = user.following_count;
 
+            const avatarBox = document.getElementById('profileAvatarBox');
+            if (user.profile_img) {
+                avatarBox.innerHTML = `<img src="${user.profile_img}" class="w-full h-full object-cover">`;
+            } else {
+                document.getElementById('profileAvatarText').innerText = user.username.substring(0, 2);
+            }
+
             const isMyProfile = meData.logged_in && (meData.username === user.username);
             const actionArea = document.getElementById('profileActionArea');
+            const uploadBtn = document.getElementById('profileImageUploadBtn');
 
             if (isMyProfile) {
                 document.getElementById('profileEmail').innerText = user.email;
+                uploadBtn.classList.remove('hidden');
+                uploadBtn.classList.add('flex');
+                uploadBtn.onclick = () => document.getElementById('profileImageInput').click();
+
                 actionArea.innerHTML = `
                     <button onclick="logout()" class="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg border border-slate-200 transition">
                         로그아웃
@@ -170,6 +186,9 @@
                 `;
             } else {
                 document.getElementById('profileEmail').innerText = '';
+                uploadBtn.classList.add('hidden');
+                uploadBtn.classList.remove('flex');
+
                 const btnText = user.is_following ? '팔로잉' : '팔로우';
                 const btnClass = user.is_following ? 
                     "px-5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg border border-slate-200 transition" :
@@ -185,7 +204,26 @@
             loadUserPosts(user.username);
         }
 
-        // 팔로우 / 언팔로우 버튼 연동
+        // 프로필 이미지 업로드
+        function uploadProfileImage(input) {
+            if (input.files.length === 0) return;
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+
+            fetch('/api/profile-image', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('profileAvatarBox').innerHTML = `<img src="${data.profile_img}" class="w-full h-full object-cover">`;
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+
         function handleFollowToggle(targetUsername, btn) {
             if (!loggedInUser) { alert('로그인이 필요합니다.'); window.location.href = '/'; return; }
             fetch(`/api/follow/${targetUsername}`, { method: 'POST' })
@@ -204,7 +242,6 @@
                 });
         }
 
-        // 팔로워 / 팔로잉 유저 목록 팝업 모달
         function openFollowListModal(type) {
             const title = type === 'followers' ? '팔로워' : '팔로우';
             document.getElementById('followListTitle').innerText = title;
@@ -244,7 +281,6 @@
             document.getElementById('followListModal').classList.add('hidden');
         }
 
-        // 게시글 그리드 로드
         function loadUserPosts(username) {
             fetch(`/api/posts/user/${username}`)
                 .then(res => res.json())
@@ -284,14 +320,19 @@
                 });
         }
 
-        // 게시물 클릭시 상세 보기 모달
         function openPostDetailModal(postId) {
             fetch(`/api/posts/${postId}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
                         const post = data.post;
-                        document.getElementById('modalUserAvatar').innerText = post.username.substring(0, 2);
+                        const avatarBox = document.getElementById('modalUserAvatar');
+                        if (post.profile_img) {
+                            avatarBox.innerHTML = `<img src="${post.profile_img}" class="w-full h-full object-cover">`;
+                        } else {
+                            avatarBox.innerText = post.username.substring(0, 2).toUpperCase();
+                        }
+
                         document.getElementById('modalUsername').innerText = `@${post.username}`;
                         document.getElementById('modalUsername').href = `/profile/${post.username}`;
                         document.getElementById('modalTitle').innerText = post.title;

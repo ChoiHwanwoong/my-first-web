@@ -62,7 +62,7 @@
         <aside class="hidden md:block space-y-6">
             <div id="profileCard" class="bg-white p-4 border border-slate-200 rounded-xl shadow-sm"></div>
             
-            <!-- 🤖 추천 알고리즘 카드 -->
+            <!-- 추천 카드 -->
             <div class="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                 <div class="flex items-center justify-between text-xs font-bold text-slate-900 mb-3">
                     <span>회원님을 위한 맞춤 추천</span>
@@ -178,7 +178,7 @@
                 <div class="flex items-center justify-between text-white text-xs">
                     <div class="flex items-center gap-2">
                         <div class="w-7 h-7 rounded-full bg-pink-500 flex items-center justify-center font-bold text-[10px]">S</div>
-                        <span id="storyUser" class="font-semibold">username</span>
+                        <span id="storyUser" class="font-semibold cursor-pointer hover:underline">username</span>
                         <span id="storyTimeAgo" class="text-white/60 text-[10px]">방금 전</span>
                     </div>
                 </div>
@@ -204,7 +204,6 @@
             loadRecommendations();
         });
 
-        // ⏱️ 상대 시간 함수 (안전 파싱)
         function timeAgo(dateString) {
             if (!dateString) return '방금 전';
             const formattedDate = dateString.replace(' ', 'T');
@@ -239,15 +238,15 @@
                         card.innerHTML = `
                             <div class="flex items-center justify-between text-xs">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs uppercase">
+                                    <a href="/profile/${currentUser}" class="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs uppercase shadow-sm">
                                         ${currentUser.substring(0, 2)}
-                                    </div>
+                                    </a>
                                     <div class="flex flex-col">
-                                        <a href="/profile" class="font-bold text-slate-900 hover:underline">${escapeHtml(data.name)}</a>
+                                        <a href="/profile/${currentUser}" class="font-bold text-slate-900 hover:underline">${escapeHtml(data.name)}</a>
                                         <span class="text-slate-400 text-[11px]">@${escapeHtml(currentUser)}</span>
                                     </div>
                                 </div>
-                                <a href="/profile" class="text-blue-500 font-semibold text-[11px] hover:underline">프로필</a>
+                                <a href="/profile/${currentUser}" class="text-blue-500 font-semibold text-[11px] hover:underline">프로필</a>
                             </div>
                         `;
                     } else {
@@ -275,11 +274,11 @@
                             item.className = "flex items-center justify-between";
                             item.innerHTML = `
                                 <div class="flex items-center gap-2.5">
-                                    <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-700 uppercase">
+                                    <a href="/profile/${r.username}" class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-700 uppercase hover:bg-slate-200 transition">
                                         ${r.username.substring(0, 2)}
-                                    </div>
+                                    </a>
                                     <div class="flex flex-col">
-                                        <span class="font-semibold text-slate-800">${escapeHtml(r.username)}</span>
+                                        <a href="/profile/${r.username}" class="font-semibold text-slate-800 hover:underline">${escapeHtml(r.username)}</a>
                                         <span class="text-[10px] text-slate-400">${escapeHtml(r.reason)}</span>
                                     </div>
                                 </div>
@@ -343,10 +342,13 @@
                         article.innerHTML = `
                             <div class="p-3 flex items-center justify-between border-b border-slate-100">
                                 <div class="flex items-center gap-2.5">
-                                    <div class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-bold text-white uppercase">
+                                    <!-- 👇 프로필 연결 링크 -->
+                                    <a href="/profile/${post.username}" class="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-bold text-white uppercase hover:opacity-80 transition">
                                         ${post.username.substring(0, 2)}
-                                    </div>
-                                    <span class="text-xs font-semibold text-slate-900">${escapeHtml(post.username)}</span>
+                                    </a>
+                                    <a href="/profile/${post.username}" class="text-xs font-semibold text-slate-900 hover:underline">
+                                        ${escapeHtml(post.username)}
+                                    </a>
                                     <span class="text-[11px] text-slate-400">• ${timeAgo(post.created_at)}</span>
                                 </div>
                             </div>
@@ -361,7 +363,7 @@
 
                                 <p class="font-semibold mb-1 text-slate-900" id="likeCount-${post.id}">좋아요 ${post.likes}개</p>
                                 <p class="text-slate-700 leading-relaxed mb-3">
-                                    <span class="font-semibold text-slate-900 mr-1.5">${escapeHtml(post.username)}</span>
+                                    <a href="/profile/${post.username}" class="font-semibold text-slate-900 mr-1.5 hover:underline">${escapeHtml(post.username)}</a>
                                     ${escapeHtml(post.content)}
                                 </p>
 
@@ -410,7 +412,7 @@
                         item.className = "flex items-center justify-between group py-0.5";
                         item.innerHTML = `
                             <p>
-                                <span class="font-semibold text-slate-800">${escapeHtml(c.username)}</span> 
+                                <a href="/profile/${c.username}" class="font-semibold text-slate-800 hover:underline">${escapeHtml(c.username)}</a> 
                                 ${escapeHtml(c.content)} 
                                 <span class="text-[10px] text-slate-400 ml-1.5">${timeAgo(c.created_at)}</span>
                             </p>
@@ -536,7 +538,10 @@
             const ring = el.querySelector('.story-ring');
             if (ring) { ring.classList.remove('story-ring'); ring.classList.add('story-viewed'); }
 
-            document.getElementById('storyUser').innerText = username;
+            const userElem = document.getElementById('storyUser');
+            userElem.innerText = username;
+            userElem.onclick = () => window.location.href = `/profile/${username}`;
+
             document.getElementById('storyTimeAgo').innerText = timeAgo(createdAt);
             document.getElementById('storyTitle').innerText = title;
             document.getElementById('storyDesc').innerText = desc;

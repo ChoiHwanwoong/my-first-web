@@ -85,11 +85,13 @@ init_db()
 def index():
     return render_template('index.html')
 
+# 프로필 페이지 라우팅 (본인 또는 타인)
 @app.route('/profile')
-def profile_page():
-    return render_template('profile.html')
+@app.route('/profile/<username>')
+def profile_page(username=None):
+    return render_template('profile.html', target_username=username)
 
-# --- 🔐 Auth APIs ---
+# --- 🔐 Auth & User APIs ---
 @app.route('/api/me', methods=['GET'])
 def get_me():
     if 'username' in session:
@@ -106,6 +108,26 @@ def get_me():
                 'email': row[2] or ''
             })
     return jsonify({'logged_in': False})
+
+# 특정 유저 정보 조회 API
+@app.route('/api/users/<username>', methods=['GET'])
+def get_user_profile(username):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT username, name, email FROM users WHERE username = ?', (username,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        return jsonify({
+            'status': 'success',
+            'user': {
+                'username': row[0],
+                'name': row[1] or row[0],
+                'email': row[2] or ''
+            }
+        })
+    return jsonify({'status': 'error', 'message': '사용자를 찾을 수 없습니다.'}), 404
 
 @app.route('/api/signup', methods=['POST'])
 def signup():
@@ -175,7 +197,7 @@ def upload_file():
         image_url = f"/static/uploads/{save_filename}"
         return jsonify({'status': 'success', 'image_url': image_url})
 
-# --- 🤖 추천 알고리즘 API ---
+# --- 🤖 Recommendations API ---
 @app.route('/api/recommendations', methods=['GET'])
 def get_recommendations():
     conn = sqlite3.connect(DB_PATH)
@@ -185,7 +207,6 @@ def get_recommendations():
     recommendations = []
 
     if current_user:
-        # 1. 협업 필터링: 내가 좋아요 누른 글에 함께 좋아요 누른 유저 탐색
         query = '''
             SELECT pl2.username, COUNT(*) as common_likes
             FROM post_likes pl1
@@ -204,7 +225,6 @@ def get_recommendations():
                 'reason': f"{current_user}님과 취향이 비슷함"
             })
 
-    # 추천수가 부족할 경우 전체 유저 중 활발한 유저 추천
     if len(recommendations) < 3:
         exclude_users = [current_user] if current_user else []
         exclude_users.extend([r['username'] for r in recommendations])
@@ -336,12 +356,9 @@ def get_posts():
     conn.close()
     return jsonify({'status': 'success', 'posts': posts})
 
-@app.route('/api/my-posts', methods=['GET'])
-def get_my_posts():
-    if 'username' not in session:
-        return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
-
-    username = session['username']
+# 특정 유저의 게시글만 가져오기 API
+@app.route('/api/posts/user/<username>', methods=['GET'])
+def get_user_posts(username):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute('SELECT id, title, content, image_url, likes, created_at FROM posts WHERE username = ? ORDER BY id DESC', (username,))

@@ -36,9 +36,7 @@
             <div class="flex flex-col gap-4 text-center sm:text-left flex-1">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-4">
                     <h1 id="profileUsername" class="text-xl font-normal text-slate-900">@username</h1>
-                    <button onclick="logout()" class="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg border border-slate-200 transition">
-                        로그아웃
-                    </button>
+                    <div id="profileActionArea"></div>
                 </div>
 
                 <div class="flex justify-center sm:justify-start gap-8 text-xs text-slate-800">
@@ -49,7 +47,7 @@
 
                 <div class="text-xs space-y-1">
                     <p id="profileName" class="font-bold text-slate-900">사용자 이름</p>
-                    <p id="profileEmail" class="text-slate-500">user@email.com</p>
+                    <p id="profileEmail" class="text-slate-500"></p>
                 </div>
             </div>
         </div>
@@ -69,29 +67,70 @@
     </footer>
 
     <script>
+        // 서버에서 전달한 URL 대상 사용자 이름 파싱
+        const pathParts = window.location.pathname.split('/');
+        const targetUserFromUrl = pathParts.length > 2 && pathParts[2] ? pathParts[2] : null;
+
         document.addEventListener("DOMContentLoaded", () => {
-            loadUserProfile();
-            loadMyPosts();
+            initProfile();
         });
 
-        function loadUserProfile() {
-            fetch('/api/me')
-                .then(res => res.json())
-                .then(data => {
-                    if (!data.logged_in) {
-                        alert('로그인이 필요한 페이지입니다.');
-                        window.location.href = '/';
-                        return;
-                    }
-                    document.getElementById('profileUsername').innerText = `@${data.username}`;
-                    document.getElementById('profileName').innerText = data.name;
-                    document.getElementById('profileEmail').innerText = data.email || '등록된 이메일 없음';
-                    document.getElementById('profileAvatarText').innerText = data.username.substring(0, 2);
-                });
+        async function initProfile() {
+            const meRes = await fetch('/api/me');
+            const meData = await meRes.json();
+
+            let targetUser = targetUserFromUrl;
+
+            // URL에 타겟 사용자가 지정되지 않았다면 내 프로필 조회
+            if (!targetUser) {
+                if (meData.logged_in) {
+                    targetUser = meData.username;
+                } else {
+                    alert('로그인이 필요한 페이지입니다.');
+                    window.location.href = '/';
+                    return;
+                }
+            }
+
+            // 프로필 타겟 사용자 정보 로드
+            const userRes = await fetch(`/api/users/${targetUser}`);
+            const userData = await userRes.json();
+
+            if (userData.status !== 'success') {
+                alert('사용자를 찾을 수 없습니다.');
+                window.location.href = '/';
+                return;
+            }
+
+            const user = userData.user;
+            document.getElementById('profileUsername').innerText = `@${user.username}`;
+            document.getElementById('profileName').innerText = user.name;
+            document.getElementById('profileAvatarText').innerText = user.username.substring(0, 2);
+
+            const isMyProfile = meData.logged_in && (meData.username === user.username);
+            const actionArea = document.getElementById('profileActionArea');
+
+            if (isMyProfile) {
+                document.getElementById('profileEmail').innerText = user.email;
+                actionArea.innerHTML = `
+                    <button onclick="logout()" class="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg border border-slate-200 transition">
+                        로그아웃
+                    </button>
+                `;
+            } else {
+                document.getElementById('profileEmail').innerText = '';
+                actionArea.innerHTML = `
+                    <button onclick="toggleFollowBtn(this)" class="px-5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs rounded-lg transition shadow-sm">
+                        팔로우
+                    </button>
+                `;
+            }
+
+            loadUserPosts(user.username);
         }
 
-        function loadMyPosts() {
-            fetch('/api/my-posts')
+        function loadUserPosts(username) {
+            fetch(`/api/posts/user/${username}`)
                 .then(res => res.json())
                 .then(data => {
                     const grid = document.getElementById('myPostsGrid');
@@ -126,6 +165,16 @@
                         });
                     }
                 });
+        }
+
+        function toggleFollowBtn(btn) {
+            if (btn.innerText === '팔로우') {
+                btn.innerText = '팔로잉';
+                btn.className = "px-5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg border border-slate-200 transition";
+            } else {
+                btn.innerText = '팔로우';
+                btn.className = "px-5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs rounded-lg transition shadow-sm";
+            }
         }
 
         function logout() {

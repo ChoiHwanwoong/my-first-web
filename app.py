@@ -1,13 +1,13 @@
-from flask import Flask, render_template, request, jsonify, session, send_from_directory
+from flask import Flask, render_template, request, jsonify, session
 import sqlite3
 import os
+from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_for_woongstagram_app'
 DB_PATH = 'comments.db'
 
-# 업로드 폴더 설정
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -70,6 +70,16 @@ def init_db():
             desc TEXT NOT NULL,
             image_url TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # 6. 스토리 읽음 기록 테이블
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS story_views (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            story_id INTEGER NOT NULL,
+            username TEXT NOT NULL,
+            UNIQUE(story_id, username)
         )
     ''')
     conn.commit()
@@ -150,7 +160,7 @@ def logout():
     session.clear()
     return jsonify({'status': 'success'})
 
-# --- 📁 파일 업로드 API ---
+# --- 📁 Upload API ---
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     if 'username' not in session:
@@ -165,23 +175,47 @@ def upload_file():
 
     if file:
         filename = secure_filename(file.filename)
-        # 파일명 중복 방지 (사용자명 접두사)
-        save_filename = f"{session['username']}_{int(os.path.getmtime(DB_PATH) if os.path.exists(DB_PATH) else 0)}_{filename}"
+        save_filename = f"{session['username']}_{int(datetime.now().timestamp())}_{filename}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], save_filename)
         file.save(filepath)
         image_url = f"/static/uploads/{save_filename}"
         return jsonify({'status': 'success', 'image_url': image_url})
 
-# --- 📸 Story APIs ---
+# --- 📸 Story APIs (24시간 자동 만료 & 읽음 처리 반영) ---
 @app.route('/api/stories', methods=['GET'])
 def get_stories():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('SELECT id, username, title, desc, image_url FROM stories ORDER BY id DESC')
-    rows = cursor.fetchall()
-    conn.close()
 
-    stories = [{'id': r[0], 'username': r[1], 'title': r[2], 'desc': r[3], 'image_url': r[4]} for r in rows]
+    # 1. 24시간 지난 오래된 스토리 정리
+    cutoff_time = (datetime.now() - timedelta(hours=24)).strftime('%Y-%m-%d %H:%M:%S')
+    cursor.execute('DELETE FROM stories WHERE created_at < ?', (cutoff_time,))
+    conn.commit()
+
+    # 2. 최근 24시간 이내 스토리만 조회
+    cursor.execute('SELECT id, username, title, desc, image_url, created_at FROM stories ORDER BY id DESC')
+    rows = cursor.fetchall()
+
+    user = session.get('username')
+    stories = []
+    for r in rows:
+        story_id = r[0]
+        is_viewed = False
+        if user:
+            cursor.execute('SELECT 1 FROM story_views WHERE story_id = ? AND username = ?', (story_id, user))
+            is_viewed = bool(cursor.fetchone())
+
+        stories.append({
+            'id': story_id,
+            'username': r[1],
+            'title': r[2],
+            'desc': r[3],
+            'image_url': r[4],
+            'created_at': r[5],
+            'is_viewed': is_viewed
+        })
+
+    conn.close()
     return jsonify({'status': 'success', 'stories': stories})
 
 @app.route('/api/stories', methods=['POST'])
@@ -198,13 +232,34 @@ def create_story():
         return jsonify({'status': 'error', 'message': '제목을 입력해 주세요.'}), 400
 
     username = session['username']
+    now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO stories (username, title, desc, image_url) VALUES (?, ?, ?, ?)', 
-                   (username, title, desc, image_url))
+    cursor.execute('INSERT INTO stories (username, title, desc, image_url, created_at) VALUES (?, ?, ?, ?, ?)', 
+                   (username, title, desc, image_url, now_str))
     conn.commit()
     conn.close()
 
+    return jsonify({'status': 'success'})
+
+# 스토리 읽음 처리 API
+@app.route('/api/stories/<int:story_id>/view', methods=['POST'])
+def mark_story_viewed(story_id):
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
+
+    username = session['username']
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute('INSERT INTO story_views (story_id, username) VALUES (?, ?)', (story_id, username))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        pass  # 이미 읽은 기록이 있으면 무시
+
+    conn.close()
     return jsonify({'status': 'success'})
 
 # --- 📝 Post APIs ---

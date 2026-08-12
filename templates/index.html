@@ -46,7 +46,7 @@
             <!-- Story Bar -->
             <div class="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4 overflow-x-auto scrollbar-hide shadow-sm select-none">
                 <!-- Add Story Button -->
-                <div onclick="openCreateStoryModal()" class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer group">
+                <div onclick="openCreateStoryModal()" class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer group shrink-0">
                     <div class="w-14 h-14 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-500 group-hover:border-blue-500 group-hover:text-blue-500 transition">
                         <i class="fa-solid fa-plus text-lg"></i>
                     </div>
@@ -111,7 +111,7 @@
         </div>
     </div>
 
-    <!-- 2. 게시물 작성 모달 (파일 선택 첨부 기능 추가) -->
+    <!-- 2. 게시물 작성 모달 -->
     <div id="createPostModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
             <button onclick="closeCreatePostModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -123,7 +123,6 @@
             <div class="space-y-3 text-xs">
                 <input type="text" id="postTitleInput" placeholder="제목" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
                 
-                <!-- File Upload Input -->
                 <div class="border border-slate-200 rounded-lg p-2.5 bg-slate-50 flex items-center justify-between">
                     <input type="file" id="postFileInput" accept="image/*" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100">
                 </div>
@@ -142,7 +141,7 @@
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
 
-            <h3 class="text-sm font-bold text-center border-b border-slate-100 pb-3 mb-4">내 스토리 올리기</h3>
+            <h3 class="text-sm font-bold text-center border-b border-slate-100 pb-3 mb-4">내 스토리 올리기 (24시간 유지)</h3>
 
             <div class="space-y-3 text-xs">
                 <input type="text" id="storyTitleInput" placeholder="스토리 제목" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
@@ -233,7 +232,7 @@
                 });
         }
 
-        // 스토리 목록 로드
+        // 스토리 목록 로드 (읽음 여부에 따른 테두리 색상 분기)
         function loadStories() {
             fetch('/api/stories')
                 .then(res => res.json())
@@ -243,10 +242,12 @@
                     if (data.status === 'success') {
                         data.stories.forEach(s => {
                             const item = document.createElement('div');
-                            item.className = "flex flex-col items-center gap-1 min-w-[64px] cursor-pointer group";
-                            item.onclick = () => showStoryModal(item, s.username, s.title, s.desc, s.image_url);
+                            item.className = "flex flex-col items-center gap-1 min-w-[64px] cursor-pointer group shrink-0";
+                            item.onclick = () => showStoryModal(item, s.id, s.username, s.title, s.desc, s.image_url);
+                            
+                            const ringClass = s.is_viewed ? 'story-viewed' : 'story-ring';
                             item.innerHTML = `
-                                <div class="w-14 h-14 rounded-full p-[2px] story-ring transition group-hover:scale-105">
+                                <div class="w-14 h-14 rounded-full p-[2px] ${ringClass} transition group-hover:scale-105">
                                     <div class="w-full h-full rounded-full bg-slate-900 flex items-center justify-center font-bold text-xs text-white border-2 border-white uppercase overflow-hidden">
                                         ${s.image_url ? `<img src="${s.image_url}" class="w-full h-full object-cover">` : s.username.substring(0, 2)}
                                     </div>
@@ -319,7 +320,6 @@
                 });
         }
 
-        // 좋아요 토글
         function toggleLike(postId) {
             if (!currentUser) { alert('로그인이 필요합니다.'); openAuthModal(); return; }
             fetch(`/api/posts/${postId}/like`, { method: 'POST' })
@@ -385,7 +385,6 @@
 
         function focusComment(postId) { document.getElementById(`commentInput-${postId}`).focus(); }
 
-        // 게시물 및 파일 업로드 처리
         function openCreatePostModal() {
             if (!currentUser) { alert('로그인이 필요합니다.'); openAuthModal(); return; }
             document.getElementById('createPostModal').classList.remove('hidden');
@@ -400,18 +399,13 @@
 
             if (!title || !content) { alert('제목과 내용을 입력해 주세요.'); return; }
 
-            // 첨부 파일이 있을 시 서버에 업로드
             if (fileInput.files.length > 0) {
                 const formData = new FormData();
                 formData.append('file', fileInput.files[0]);
                 const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
                 const uploadData = await uploadRes.json();
-                if (uploadData.status === 'success') {
-                    imageUrl = uploadData.image_url;
-                } else {
-                    alert('사진 업로드 실패: ' + uploadData.message);
-                    return;
-                }
+                if (uploadData.status === 'success') { imageUrl = uploadData.image_url; }
+                else { alert('사진 업로드 실패: ' + uploadData.message); return; }
             }
 
             fetch('/api/posts', {
@@ -431,7 +425,6 @@
             });
         }
 
-        // 스토리 올리기 처리
         function openCreateStoryModal() {
             if (!currentUser) { alert('로그인이 필요합니다.'); openAuthModal(); return; }
             document.getElementById('createStoryModal').classList.remove('hidden');
@@ -451,9 +444,7 @@
                 formData.append('file', fileInput.files[0]);
                 const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
                 const uploadData = await uploadRes.json();
-                if (uploadData.status === 'success') {
-                    imageUrl = uploadData.image_url;
-                }
+                if (uploadData.status === 'success') { imageUrl = uploadData.image_url; }
             }
 
             fetch('/api/stories', {
@@ -473,7 +464,13 @@
             });
         }
 
-        function showStoryModal(el, username, title, desc, imageUrl) {
+        // 스토리 시청 및 DB 읽음 처리 연동
+        function showStoryModal(el, storyId, username, title, desc, imageUrl) {
+            // 서버에 읽음 기록 요청
+            if (currentUser) {
+                fetch(`/api/stories/${storyId}/view`, { method: 'POST' });
+            }
+
             const ring = el.querySelector('.story-ring');
             if (ring) { ring.classList.remove('story-ring'); ring.classList.add('story-viewed'); }
 
@@ -505,7 +502,6 @@
             clearTimeout(storyTimer);
         }
 
-        // Auth Modals
         function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); }
         function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
 
@@ -531,7 +527,7 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data.status === 'success') { closeAuthModal(); checkLoginStatus(); loadPosts(); }
+                if (data.status === 'success') { closeAuthModal(); checkLoginStatus(); loadPosts(); loadStories(); }
                 else alert(data.message);
             });
         }
@@ -547,7 +543,7 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data.status === 'success') { closeAuthModal(); checkLoginStatus(); loadPosts(); }
+                if (data.status === 'success') { closeAuthModal(); checkLoginStatus(); loadPosts(); loadStories(); }
                 else alert(data.message);
             });
         }

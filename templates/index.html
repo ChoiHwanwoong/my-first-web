@@ -16,7 +16,7 @@
 </head>
 <body class="bg-white text-slate-900 font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-pink-500 selection:text-white">
 
-    <!-- Header Navigation (Git 버튼 제거) -->
+    <!-- Header Navigation -->
     <header class="border-b border-slate-200 bg-white sticky top-0 z-40">
         <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
             <div onclick="location.reload()" class="text-2xl font-black tracking-tight italic cursor-pointer font-serif text-slate-900 select-none">
@@ -68,7 +68,7 @@
                 <div id="recommendationList" class="space-y-3 text-xs"></div>
             </div>
 
-            <!-- 📰 오늘의 주요 뉴스 카드 (6시간 주기 갱신) -->
+            <!-- 📰 오늘의 주요 뉴스 카드 -->
             <div class="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                 <div class="flex items-center justify-between text-xs font-bold text-slate-900 mb-3">
                     <span class="flex items-center gap-1.5"><i class="fa-solid fa-newspaper text-blue-500"></i> 오늘의 주요 뉴스</span>
@@ -274,7 +274,6 @@
                 });
         }
 
-        // 📰 주요 뉴스 가져오기
         function loadHotNews() {
             fetch('/api/news')
                 .then(res => res.json())

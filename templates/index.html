@@ -142,14 +142,13 @@
                     <p class="font-semibold mb-1 text-slate-900" id="likeCount1">좋아요 128개</p>
                     <p class="text-slate-700 leading-relaxed">
                         <span class="font-semibold text-slate-900 mr-1.5">my_first_web_app</span>
-                        Flask 백엔드와 Render 클라우드를 연동하여 구축한 인터랙티브 웹 프로젝트입니다. ✨
+                        Flask 백엔드와 SQLite 데이터베이스로 저장/삭제가 가능한 댓글 기능 적용! ✨
                     </p>
-                    
-                    <div id="commentList1" class="mt-3 text-[11px] text-slate-600 space-y-1">
-                        <p><span class="font-semibold text-slate-800">dev_king</span> 깔끔하고 이쁘네요 👍</p>
-                        <p><span class="font-semibold text-slate-800">python_fan</span> Flask 배포 성공 축하드립니다!</p>
-                    </div>
 
+                    <!-- DB에서 불러오는 동적 댓글 목록 -->
+                    <div id="commentList1" class="mt-3 text-[11px] text-slate-600 space-y-1.5"></div>
+
+                    <!-- 댓글 입력폼 -->
                     <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
                         <input type="text" id="commentInput1" placeholder="댓글 달기..." onkeypress="if(event.key==='Enter') addComment(1)" class="w-full text-xs outline-none bg-transparent text-slate-800 placeholder-slate-400">
                         <button onclick="addComment(1)" class="text-blue-500 font-semibold text-xs ml-2 hover:text-blue-700 transition whitespace-nowrap">게시</button>
@@ -173,9 +172,9 @@
                 </div>
 
                 <div class="bg-slate-900 p-8 text-left border-y border-slate-800 font-mono text-xs text-emerald-400 leading-relaxed min-h-[200px] flex flex-col justify-center select-none">
-                    <p class="text-slate-500"># Git Commit Pipeline</p>
+                    <p class="text-slate-500"># SQLite Database Connected</p>
                     <p>$ git add .</p>
-                    <p>$ git commit -m "Add interactive story viewer modal"</p>
+                    <p>$ git commit -m "Add database persistent comment CRUD"</p>
                     <p>$ git push origin main</p>
                 </div>
 
@@ -192,10 +191,10 @@
                     <p class="font-semibold mb-1 text-slate-900" id="likeCount2">좋아요 85개</p>
                     <p class="text-slate-700 leading-relaxed">
                         <span class="font-semibold text-slate-900 mr-1.5">github_pipeline</span>
-                        진짜 인스타그램처럼 스토리를 누르면 스토리 뷰어가 짠 나타납니다! 📸
+                        새로고침을 해도 댓글이 사라지지 않고, 삭제 버튼(X)을 누르면 즉시 지워집니다! 🚀
                     </p>
 
-                    <div id="commentList2" class="mt-3 text-[11px] text-slate-600 space-y-1"></div>
+                    <div id="commentList2" class="mt-3 text-[11px] text-slate-600 space-y-1.5"></div>
 
                     <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
                         <input type="text" id="commentInput2" placeholder="댓글 달기..." onkeypress="if(event.key==='Enter') addComment(2)" class="w-full text-xs outline-none bg-transparent text-slate-800 placeholder-slate-400">
@@ -265,25 +264,20 @@
 
             <footer class="text-[11px] text-slate-400 leading-relaxed font-sans px-1">
                 소개 • 도움말 • 홍보 센터 • API • 채용 정보 • 개인정보처리방침 • 약관
-                <p class="mt-3 text-slate-500">© 2026 INSTAGRAM STYLE APP</p>
+                <p class="mt-3 text-slate-500">© 2026 INSTAGRAM PERSISTENT DB APP</p>
             </footer>
         </aside>
 
     </main>
 
-    <!-- 스토리 뷰어 모달 (전체화면 오버레이) -->
+    <!-- 스토리 뷰어 모달 -->
     <div id="storyModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center">
-        <!-- Close Button -->
         <button onclick="closeStoryModal()" class="absolute top-5 right-5 text-white text-2xl hover:text-slate-400 z-50">
             <i class="fa-solid fa-xmark"></i>
         </button>
 
-        <!-- Story Container -->
         <div class="w-full max-w-sm h-[580px] bg-slate-900 rounded-2xl overflow-hidden relative flex flex-col justify-between shadow-2xl border border-slate-800">
-            
-            <!-- Story Header -->
             <div class="p-4 z-10 bg-gradient-to-b from-black/80 to-transparent">
-                <!-- Progress Bar -->
                 <div class="w-full bg-white/30 h-1 rounded-full mb-3 overflow-hidden">
                     <div id="storyProgress" class="bg-white h-full w-0"></div>
                 </div>
@@ -297,14 +291,12 @@
                 </div>
             </div>
 
-            <!-- Story Body Content -->
             <div id="storyBg" class="absolute inset-0 flex flex-col items-center justify-center text-white p-8 text-center">
                 <i id="storyIcon" class="fa-solid fa-star text-5xl mb-4 animate-bounce"></i>
                 <h3 id="storyTitle" class="text-2xl font-bold tracking-tight mb-2">Story Title</h3>
                 <p id="storyDesc" class="text-xs text-white/80 leading-relaxed max-w-xs">Story Description Content</p>
             </div>
 
-            <!-- Story Footer Input -->
             <div class="p-4 z-10 bg-gradient-to-t from-black/80 to-transparent flex items-center gap-3 text-white text-sm">
                 <input type="text" placeholder="메시지 보내기..." class="bg-white/10 border border-white/20 rounded-full px-4 py-2 text-xs w-full text-white placeholder-white/50 outline-none">
                 <i onclick="customAlert('좋아요를 보냈습니다! ❤️')" class="fa-regular fa-heart text-xl cursor-pointer hover:text-red-500"></i>
@@ -318,6 +310,78 @@
         const likes = { 1: { count: 128, state: false }, 2: { count: 85, state: false } };
         const bookmarks = { 1: false, 2: false };
         let storyTimer = null;
+
+        // 페이지 로드 시 기존 댓글 가져오기
+        document.addEventListener("DOMContentLoaded", () => {
+            loadComments(1);
+            loadComments(2);
+        });
+
+        // 댓글 데이터 로드 (GET)
+        function loadComments(postId) {
+            fetch(`/api/comments/${postId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const list = document.getElementById(`commentList${postId}`);
+                        list.innerHTML = '';
+                        data.comments.forEach(comment => {
+                            renderCommentItem(postId, comment);
+                        });
+                    }
+                });
+        }
+
+        // 댓글 화면 렌더링 함수
+        function renderCommentItem(postId, comment) {
+            const list = document.getElementById(`commentList${postId}`);
+            const item = document.createElement('div');
+            item.className = "flex items-center justify-between group py-0.5";
+            item.id = `comment-${comment.id}`;
+            item.innerHTML = `
+                <p><span class="font-semibold text-slate-800">${escapeHtml(comment.username)}</span> ${escapeHtml(comment.content)}</p>
+                <button onclick="deleteComment(${comment.id}, ${postId})" class="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition px-1" title="삭제">
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+            `;
+            list.appendChild(item);
+        }
+
+        // 댓글 추가 (POST)
+        function addComment(postId) {
+            const input = document.getElementById(`commentInput${postId}`);
+            const content = input.value.trim();
+            if (!content) return;
+
+            fetch('/api/comments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    post_id: postId,
+                    username: 'woong_dev',
+                    content: content
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    renderCommentItem(postId, data.comment);
+                    input.value = '';
+                }
+            });
+        }
+
+        // 댓글 삭제 (DELETE)
+        function deleteComment(commentId, postId) {
+            fetch(`/api/comments/${commentId}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const el = document.getElementById(`comment-${commentId}`);
+                        if (el) el.remove();
+                    }
+                });
+        }
 
         function toggleLike(id) {
             const btn = document.getElementById(`likeBtn${id}`);
@@ -347,23 +411,11 @@
             }
         }
 
-        function addComment(id) {
-            const input = document.getElementById(`commentInput${id}`);
-            const list = document.getElementById(`commentList${id}`);
-            if (!input.value.trim()) return;
-            const newComment = document.createElement('p');
-            newComment.innerHTML = `<span class="font-semibold text-slate-800">woong_dev</span> ${escapeHtml(input.value)}`;
-            list.appendChild(newComment);
-            input.value = '';
-        }
-
         function focusComment(id) {
             document.getElementById(`commentInput${id}`).focus();
         }
 
-        // 스토리 뷰어 열기
         function showStoryModal(el, username, title, desc, bgClass, iconClass) {
-            // 스토리 읽음 처리 (분홍 테두리 회색으로 변경)
             const ring = el.querySelector('.story-ring');
             if (ring) {
                 ring.classList.remove('story-ring');
@@ -381,14 +433,11 @@
             
             modal.classList.remove('hidden');
             progress.classList.remove('animate-progress');
-            void progress.offsetWidth; // 리셋 트리거
+            void progress.offsetWidth;
             progress.classList.add('animate-progress');
 
-            // 5초 후 자동으로 닫기
             clearTimeout(storyTimer);
-            storyTimer = setTimeout(() => {
-                closeStoryModal();
-            }, 5000);
+            storyTimer = setTimeout(() => { closeStoryModal(); }, 5000);
         }
 
         function closeStoryModal() {

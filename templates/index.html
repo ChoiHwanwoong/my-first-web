@@ -8,9 +8,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* 인스타그램 스토리 링 그라데이션 */
         .story-ring {
             background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+        }
+        .story-viewed {
+            background: #cbd5e1 !important;
         }
     </style>
 </head>
@@ -19,23 +21,23 @@
     <!-- 상단 헤더 -->
     <header class="border-b border-slate-200 bg-white sticky top-0 z-50">
         <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-            <div class="text-xl font-bold tracking-tight italic cursor-pointer font-serif text-slate-900">
+            <div onclick="location.reload()" class="text-xl font-bold tracking-tight italic cursor-pointer font-serif text-slate-900 select-none">
                 Instagram
             </div>
 
             <!-- 검색창 -->
-            <div class="hidden sm:flex items-center bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 text-xs w-64">
+            <div class="hidden sm:flex items-center bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 text-xs w-64 focus-within:border-slate-400 transition">
                 <i class="fa-solid fa-magnifying-glass text-slate-400 mr-2"></i>
-                <input type="text" placeholder="검색" class="bg-transparent outline-none w-full text-slate-800 placeholder-slate-400">
+                <input type="text" id="headerSearch" placeholder="검색" onkeypress="if(event.key==='Enter') searchAlert()" class="bg-transparent outline-none w-full text-slate-800 placeholder-slate-400">
             </div>
 
             <!-- 우측 메뉴 -->
             <div class="flex items-center gap-5 text-xl text-slate-800">
-                <i class="fa-solid fa-house cursor-pointer hover:text-slate-500 transition"></i>
-                <i class="fa-paper-plane fa-regular cursor-pointer hover:text-slate-500 transition"></i>
-                <i class="fa-square-plus fa-regular cursor-pointer hover:text-slate-500 transition"></i>
-                <i class="fa-compass fa-regular cursor-pointer hover:text-slate-500 transition"></i>
-                <i class="fa-heart fa-regular cursor-pointer hover:text-slate-500 transition"></i>
+                <i onclick="location.reload()" class="fa-solid fa-house cursor-pointer hover:text-slate-500 transition" title="홈"></i>
+                <i onclick="customAlert('메시지 함으로 이동합니다.')" class="fa-paper-plane fa-regular cursor-pointer hover:text-slate-500 transition" title="메시지"></i>
+                <i onclick="customAlert('새 게시물 작성 창을 엽니다.')" class="fa-square-plus fa-regular cursor-pointer hover:text-slate-500 transition" title="만들기"></i>
+                <i onclick="customAlert('탐색 탭으로 이동합니다.')" class="fa-compass fa-regular cursor-pointer hover:text-slate-500 transition" title="탐색"></i>
+                <i onclick="customAlert('새 알림이 없습니다.')" class="fa-heart fa-regular cursor-pointer hover:text-slate-500 transition" title="알림"></i>
                 <a href="https://github.com/ChoiHwanwoong/my-first-web" target="_blank" class="text-xs bg-slate-100 hover:bg-slate-200 border border-slate-200 px-2.5 py-1 rounded font-mono transition text-slate-700">
                     Git
                 </a>
@@ -49,10 +51,10 @@
         <!-- 중앙 피드 영역 (2열) -->
         <section class="md:col-span-2 space-y-6">
             
-            <!-- 1. 풍성해진 스토리 바 -->
-            <div class="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4 overflow-x-auto scrollbar-hide shadow-sm">
-                <div class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer">
-                    <div class="w-14 h-14 rounded-full p-[2px] story-ring">
+            <!-- 스토리 바 -->
+            <div class="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4 overflow-x-auto scrollbar-hide shadow-sm select-none">
+                <div onclick="openStory(this, 'Flask App Story')" class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer group">
+                    <div class="w-14 h-14 rounded-full p-[2px] story-ring transition group-hover:scale-105">
                         <div class="w-full h-full rounded-full bg-slate-900 flex items-center justify-center font-bold text-xs text-pink-400 border-2 border-white">
                             Flask
                         </div>
@@ -60,8 +62,8 @@
                     <span class="text-[11px] text-slate-600 truncate w-14 text-center">flask_app</span>
                 </div>
 
-                <div class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer">
-                    <div class="w-14 h-14 rounded-full p-[2px] story-ring">
+                <div onclick="openStory(this, 'Render Cloud Story')" class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer group">
+                    <div class="w-14 h-14 rounded-full p-[2px] story-ring transition group-hover:scale-105">
                         <div class="w-full h-full rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs text-white border-2 border-white">
                             Render
                         </div>
@@ -69,8 +71,8 @@
                     <span class="text-[11px] text-slate-600 truncate w-14 text-center">render_cloud</span>
                 </div>
 
-                <div class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer">
-                    <div class="w-14 h-14 rounded-full p-[2px] story-ring">
+                <div onclick="openStory(this, 'GitHub Story')" class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer group">
+                    <div class="w-14 h-14 rounded-full p-[2px] story-ring transition group-hover:scale-105">
                         <div class="w-full h-full rounded-full bg-emerald-600 flex items-center justify-center font-bold text-xs text-white border-2 border-white">
                             Git
                         </div>
@@ -78,8 +80,8 @@
                     <span class="text-[11px] text-slate-600 truncate w-14 text-center">github</span>
                 </div>
 
-                <div class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer">
-                    <div class="w-14 h-14 rounded-full p-[2px] story-ring">
+                <div onclick="openStory(this, 'Python Story')" class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer group">
+                    <div class="w-14 h-14 rounded-full p-[2px] story-ring transition group-hover:scale-105">
                         <div class="w-full h-full rounded-full bg-purple-600 flex items-center justify-center font-bold text-xs text-white border-2 border-white">
                             Python
                         </div>
@@ -87,26 +89,17 @@
                     <span class="text-[11px] text-slate-600 truncate w-14 text-center">python_dev</span>
                 </div>
 
-                <div class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer">
-                    <div class="w-14 h-14 rounded-full p-[2px] story-ring">
+                <div onclick="openStory(this, 'Tailwind UI Story')" class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer group">
+                    <div class="w-14 h-14 rounded-full p-[2px] story-ring transition group-hover:scale-105">
                         <div class="w-full h-full rounded-full bg-cyan-600 flex items-center justify-center font-bold text-xs text-white border-2 border-white">
                             Tailwind
                         </div>
                     </div>
                     <span class="text-[11px] text-slate-600 truncate w-14 text-center">tailwind_ui</span>
                 </div>
-
-                <div class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer">
-                    <div class="w-14 h-14 rounded-full p-[2px] bg-slate-300">
-                        <div class="w-full h-full rounded-full bg-slate-100 flex items-center justify-center font-bold text-xs text-slate-500 border-2 border-white">
-                            Setup
-                        </div>
-                    </div>
-                    <span class="text-[11px] text-slate-400 truncate w-14 text-center">config</span>
-                </div>
             </div>
 
-            <!-- 2. 피드 포스트 1: 웹 프로젝트 배포 성공 -->
+            <!-- 피드 포스트 1 -->
             <article class="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm">
                 <div class="p-3 flex items-center justify-between border-b border-slate-100">
                     <div class="flex items-center gap-2.5">
@@ -118,11 +111,10 @@
                         <span class="text-xs font-semibold text-slate-900">my_first_web_app</span>
                         <span class="text-slate-400 text-xs">• 1시간</span>
                     </div>
-                    <i class="fa-solid fa-ellipsis text-slate-400 cursor-pointer text-xs"></i>
+                    <i onclick="customAlert('옵션 메뉴: 게시물 신고 / 취소')" class="fa-solid fa-ellipsis text-slate-400 cursor-pointer text-xs p-1 hover:text-slate-600"></i>
                 </div>
 
-                <!-- 비주얼 카드로 꾸민 이미지 영역 -->
-                <div class="bg-gradient-to-br from-slate-50 to-slate-100 p-10 text-center flex flex-col items-center justify-center border-y border-slate-100 min-h-[280px]">
+                <div class="bg-gradient-to-br from-slate-50 to-slate-100 p-10 text-center flex flex-col items-center justify-center border-y border-slate-100 min-h-[280px] select-none">
                     <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-3xl mb-3 border border-indigo-100 shadow-sm">
                         <i class="fa-solid fa-rocket"></i>
                     </div>
@@ -134,26 +126,33 @@
                     <div class="flex items-center justify-between text-xl mb-2.5 text-slate-800">
                         <div class="flex items-center gap-4">
                             <i id="likeBtn1" onclick="toggleLike(1)" class="fa-regular fa-heart cursor-pointer hover:text-slate-400 transition"></i>
-                            <i class="fa-regular fa-comment cursor-pointer hover:text-slate-400 transition"></i>
-                            <i class="fa-regular fa-paper-plane cursor-pointer hover:text-slate-400 transition"></i>
+                            <i onclick="focusComment(1)" class="fa-regular fa-comment cursor-pointer hover:text-slate-400 transition"></i>
+                            <i onclick="customAlert('게시물 링크가 클립보드에 복사되었습니다!')" class="fa-regular fa-paper-plane cursor-pointer hover:text-slate-400 transition"></i>
                         </div>
-                        <i class="fa-regular fa-bookmark cursor-pointer hover:text-slate-400 transition"></i>
+                        <i id="bookmarkBtn1" onclick="toggleBookmark(1)" class="fa-regular fa-bookmark cursor-pointer hover:text-slate-400 transition"></i>
                     </div>
 
                     <p class="font-semibold mb-1 text-slate-900" id="likeCount1">좋아요 128개</p>
                     <p class="text-slate-700 leading-relaxed">
                         <span class="font-semibold text-slate-900 mr-1.5">my_first_web_app</span>
-                        Flask 백엔드와 Render 클라우드를 연동하여 구축한 웹 프로젝트입니다. 라이트 모드 디자인 적용 완! ✨
+                        Flask 백엔드와 Render 클라우드를 연동하여 구축한 인터랙티브 웹 프로젝트입니다. ✨
                     </p>
-                    <p class="text-slate-400 text-[11px] mt-2 cursor-pointer">댓글 24개 모두 보기</p>
-                    <div class="mt-2 text-[11px] text-slate-500 space-y-1">
+                    
+                    <!-- 댓글 목록 -->
+                    <div id="commentList1" class="mt-3 text-[11px] text-slate-600 space-y-1">
                         <p><span class="font-semibold text-slate-800">dev_king</span> 깔끔하고 이쁘네요 👍</p>
                         <p><span class="font-semibold text-slate-800">python_fan</span> Flask 배포 성공 축하드립니다!</p>
+                    </div>
+
+                    <!-- 댓글 입력폼 -->
+                    <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                        <input type="text" id="commentInput1" placeholder="댓글 달기..." onkeypress="if(event.key==='Enter') addComment(1)" class="w-full text-xs outline-none bg-transparent text-slate-800 placeholder-slate-400">
+                        <button onclick="addComment(1)" class="text-blue-500 font-semibold text-xs ml-2 hover:text-blue-700 transition whitespace-nowrap">게시</button>
                     </div>
                 </div>
             </article>
 
-            <!-- 3. 피드 포스트 2: 코드 파이프라인 소개 -->
+            <!-- 피드 포스트 2 -->
             <article class="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm">
                 <div class="p-3 flex items-center justify-between border-b border-slate-100">
                     <div class="flex items-center gap-2.5">
@@ -165,71 +164,38 @@
                         <span class="text-xs font-semibold text-slate-900">github_pipeline</span>
                         <span class="text-slate-400 text-xs">• 3시간</span>
                     </div>
-                    <i class="fa-solid fa-ellipsis text-slate-400 cursor-pointer text-xs"></i>
+                    <i onclick="customAlert('옵션 메뉴: 게시물 신고 / 취소')" class="fa-solid fa-ellipsis text-slate-400 cursor-pointer text-xs p-1 hover:text-slate-600"></i>
                 </div>
 
-                <div class="bg-slate-900 p-8 text-left border-y border-slate-800 font-mono text-xs text-emerald-400 leading-relaxed min-h-[220px] flex flex-col justify-center">
+                <div class="bg-slate-900 p-8 text-left border-y border-slate-800 font-mono text-xs text-emerald-400 leading-relaxed min-h-[200px] flex flex-col justify-center select-none">
                     <p class="text-slate-500"># Git Commit Pipeline</p>
                     <p>$ git add .</p>
-                    <p>$ git commit -m "Update light mode UI"</p>
+                    <p>$ git commit -m "Add interactive click features"</p>
                     <p>$ git push origin main</p>
-                    <p class="text-blue-400 mt-2">➔ Auto-Deploying on Render Cloud... [Done]</p>
                 </div>
 
                 <div class="p-3 text-xs">
                     <div class="flex items-center justify-between text-xl mb-2.5 text-slate-800">
                         <div class="flex items-center gap-4">
                             <i id="likeBtn2" onclick="toggleLike(2)" class="fa-regular fa-heart cursor-pointer hover:text-slate-400 transition"></i>
-                            <i class="fa-regular fa-comment cursor-pointer hover:text-slate-400 transition"></i>
-                            <i class="fa-regular fa-paper-plane cursor-pointer hover:text-slate-400 transition"></i>
+                            <i onclick="focusComment(2)" class="fa-regular fa-comment cursor-pointer hover:text-slate-400 transition"></i>
+                            <i onclick="customAlert('게시물 링크가 클립보드에 복사되었습니다!')" class="fa-regular fa-paper-plane cursor-pointer hover:text-slate-400 transition"></i>
                         </div>
-                        <i class="fa-regular fa-bookmark cursor-pointer hover:text-slate-400 transition"></i>
+                        <i id="bookmarkBtn2" onclick="toggleBookmark(2)" class="fa-regular fa-bookmark cursor-pointer hover:text-slate-400 transition"></i>
                     </div>
 
                     <p class="font-semibold mb-1 text-slate-900" id="likeCount2">좋아요 85개</p>
                     <p class="text-slate-700 leading-relaxed">
                         <span class="font-semibold text-slate-900 mr-1.5">github_pipeline</span>
-                        Git 명령어 3줄만 입력하면 자동으로 깃허브를 거쳐 서버로 반영됩니다. 🚀
+                        버튼 클릭이 작동하는 완벽한 웹 애플리케이션으로 업데이트 완료! 🚀
                     </p>
-                </div>
-            </article>
 
-            <!-- 4. 피드 포스트 3: 시스템 상태 체크 -->
-            <article class="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm">
-                <div class="p-3 flex items-center justify-between border-b border-slate-100">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-[10px] font-bold text-white">
-                            SYS
-                        </div>
-                        <span class="text-xs font-semibold text-slate-900">system_health</span>
-                        <span class="text-slate-400 text-xs">• 5시간</span>
+                    <div id="commentList2" class="mt-3 text-[11px] text-slate-600 space-y-1"></div>
+
+                    <div class="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                        <input type="text" id="commentInput2" placeholder="댓글 달기..." onkeypress="if(event.key==='Enter') addComment(2)" class="w-full text-xs outline-none bg-transparent text-slate-800 placeholder-slate-400">
+                        <button onclick="addComment(2)" class="text-blue-500 font-semibold text-xs ml-2 hover:text-blue-700 transition whitespace-nowrap">게시</button>
                     </div>
-                    <i class="fa-solid fa-ellipsis text-slate-400 cursor-pointer text-xs"></i>
-                </div>
-
-                <div class="bg-gradient-to-r from-emerald-50 to-teal-50 p-8 text-center flex flex-col items-center justify-center border-y border-slate-100">
-                    <div class="flex items-center gap-2 text-emerald-600 font-bold text-base mb-1">
-                        <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Server Status: Healthy
-                    </div>
-                    <p class="text-xs text-slate-500">All microservices running at 100% capacity</p>
-                </div>
-
-                <div class="p-3 text-xs">
-                    <div class="flex items-center justify-between text-xl mb-2.5 text-slate-800">
-                        <div class="flex items-center gap-4">
-                            <i id="likeBtn3" onclick="toggleLike(3)" class="fa-regular fa-heart cursor-pointer hover:text-slate-400 transition"></i>
-                            <i class="fa-regular fa-comment cursor-pointer hover:text-slate-400 transition"></i>
-                            <i class="fa-regular fa-paper-plane cursor-pointer hover:text-slate-400 transition"></i>
-                        </div>
-                        <i class="fa-regular fa-bookmark cursor-pointer hover:text-slate-400 transition"></i>
-                    </div>
-
-                    <p class="font-semibold mb-1 text-slate-900" id="likeCount3">좋아요 210개</p>
-                    <p class="text-slate-700">
-                        <span class="font-semibold text-slate-900 mr-1.5">system_health</span>
-                        현재 서버는 지연 없이 최적의 상태로 작동 중입니다.
-                    </p>
                 </div>
             </article>
 
@@ -249,14 +215,14 @@
                         <span class="text-slate-500 text-[11px]">Developer Account</span>
                     </div>
                 </div>
-                <button class="text-blue-600 font-semibold text-[11px] hover:text-slate-900 transition">전환</button>
+                <button onclick="customAlert('다른 개발자 계정으로 전환 기능을 준비 중입니다.')" class="text-blue-600 font-semibold text-[11px] hover:text-slate-900 transition">전환</button>
             </div>
 
-            <!-- 회원님을 위한 추천 목록 -->
+            <!-- 추천 목록 -->
             <div class="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                 <div class="flex items-center justify-between text-xs font-semibold mb-3">
                     <span class="text-slate-500">회원님을 위한 추천</span>
-                    <span class="text-slate-900 text-[11px] cursor-pointer hover:underline">모두 보기</span>
+                    <span onclick="customAlert('추천 사용자 전체 목록을 불러옵니다.')" class="text-slate-900 text-[11px] cursor-pointer hover:underline">모두 보기</span>
                 </div>
 
                 <div class="space-y-3.5 text-xs">
@@ -268,7 +234,7 @@
                                 <span class="text-slate-400 text-[10px]">인기 항목</span>
                             </div>
                         </div>
-                        <button class="text-blue-500 font-semibold text-[11px] hover:text-blue-700">팔로우</button>
+                        <button onclick="toggleFollow(this)" class="text-blue-500 font-semibold text-[11px] hover:text-blue-700 transition">팔로우</button>
                     </div>
 
                     <div class="flex items-center justify-between">
@@ -279,7 +245,7 @@
                                 <span class="text-slate-400 text-[10px]">회원님을 팔로우합니다</span>
                             </div>
                         </div>
-                        <button class="text-blue-500 font-semibold text-[11px] hover:text-blue-700">팔로우</button>
+                        <button onclick="toggleFollow(this)" class="text-blue-500 font-semibold text-[11px] hover:text-blue-700 transition">팔로우</button>
                     </div>
 
                     <div class="flex items-center justify-between">
@@ -290,33 +256,39 @@
                                 <span class="text-slate-400 text-[10px]">새로운 기능 이용 가능</span>
                             </div>
                         </div>
-                        <button class="text-blue-500 font-semibold text-[11px] hover:text-blue-700">팔로우</button>
+                        <button onclick="toggleFollow(this)" class="text-blue-500 font-semibold text-[11px] hover:text-blue-700 transition">팔로우</button>
                     </div>
                 </div>
             </div>
 
-            <!-- 하단 정보 -->
             <footer class="text-[11px] text-slate-400 leading-relaxed font-sans px-1">
                 소개 • 도움말 • 홍보 센터 • API • 채용 정보 • 개인정보처리방침 • 약관
-                <p class="mt-3 text-slate-500">© 2026 INSTAGRAM STYLE LIGHT APP</p>
+                <p class="mt-3 text-slate-500">© 2026 INSTAGRAM STYLE INTERACTIVE APP</p>
             </footer>
         </aside>
 
     </main>
 
+    <!-- 커스텀 자바스크립트 -->
     <script>
         const likes = {
             1: { count: 128, state: false },
-            2: { count: 85, state: false },
-            3: { count: 210, state: false }
+            2: { count: 85, state: false }
         };
 
+        const bookmarks = {
+            1: false,
+            2: false
+        };
+
+        // 좋아요 토글
         function toggleLike(id) {
             const btn = document.getElementById(`likeBtn${id}`);
             const count = document.getElementById(`likeCount${id}`);
             
             if (!likes[id].state) {
-                btn.className = "fa-solid fa-heart text-red-500 cursor-pointer transition";
+                btn.className = "fa-solid fa-heart text-red-500 cursor-pointer transition scale-125";
+                setTimeout(() => btn.classList.remove('scale-125'), 150);
                 likes[id].count += 1;
                 likes[id].state = true;
             } else {
@@ -325,6 +297,74 @@
                 likes[id].state = false;
             }
             count.innerText = `좋아요 ${likes[id].count}개`;
+        }
+
+        // 북마크 토글
+        function toggleBookmark(id) {
+            const btn = document.getElementById(`bookmarkBtn${id}`);
+            if (!bookmarks[id]) {
+                btn.className = "fa-solid fa-bookmark text-slate-900 cursor-pointer transition";
+                bookmarks[id] = true;
+                customAlert("게시물이 저장물 목록에 추가되었습니다.");
+            } else {
+                btn.className = "fa-regular fa-bookmark cursor-pointer hover:text-slate-400 transition";
+                bookmarks[id] = false;
+            }
+        }
+
+        // 댓글 추가
+        function addComment(id) {
+            const input = document.getElementById(`commentInput${id}`);
+            const list = document.getElementById(`commentList${id}`);
+            
+            if (!input.value.trim()) return;
+
+            const newComment = document.createElement('p');
+            newComment.className = "animate-fade-in";
+            newComment.innerHTML = `<span class="font-semibold text-slate-800">woong_dev</span> ${escapeHtml(input.value)}`;
+            
+            list.appendChild(newComment);
+            input.value = '';
+        }
+
+        function focusComment(id) {
+            document.getElementById(`commentInput${id}`).focus();
+        }
+
+        // 스토리 클릭시 시청 완료 처리
+        function openStory(el, title) {
+            const ring = el.querySelector('.story-ring');
+            if (ring) {
+                ring.classList.remove('story-ring');
+                ring.classList.add('story-viewed');
+            }
+            customAlert(`📸 [${title}] 스토리를 확인했습니다.`);
+        }
+
+        // 팔로우 토글
+        function toggleFollow(btn) {
+            if (btn.innerText === '팔로우') {
+                btn.innerText = '팔로잉';
+                btn.className = 'text-slate-800 font-semibold text-[11px] hover:text-slate-500 transition';
+            } else {
+                btn.innerText = '팔로우';
+                btn.className = 'text-blue-500 font-semibold text-[11px] hover:text-blue-700 transition';
+            }
+        }
+
+        function searchAlert() {
+            const val = document.getElementById('headerSearch').value;
+            if (val.trim()) {
+                customAlert(`'${val}' 검색 결과 페이지로 이동합니다.`);
+            }
+        }
+
+        function customAlert(msg) {
+            alert(msg);
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
     </script>
 </body>

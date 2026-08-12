@@ -7,9 +7,6 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .story-ring { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
-    </style>
 </head>
 <body class="bg-white text-slate-900 font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-pink-500 selection:text-white">
 
@@ -24,6 +21,9 @@
             <div class="flex items-center gap-5 text-xl text-slate-800">
                 <i onclick="location.reload()" class="fa-solid fa-house cursor-pointer hover:text-slate-500 transition" title="홈"></i>
                 <i onclick="openCreatePostModal()" class="fa-square-plus fa-regular cursor-pointer hover:text-slate-500 transition" title="새 게시물 만들기"></i>
+                <a href="/profile" id="headerProfileBtn" class="hidden hover:text-slate-500 transition" title="프로필">
+                    <i class="fa-regular fa-user"></i>
+                </a>
                 <a href="https://github.com/ChoiHwanwoong/my-first-web" target="_blank" class="text-xs bg-slate-100 hover:bg-slate-200 border border-slate-200 px-2.5 py-1 rounded font-mono transition text-slate-700">
                     Git
                 </a>
@@ -50,7 +50,7 @@
 
     </main>
 
-    <!-- 1. 로그인 / 회원가입 모달 (트렌디 스타일) -->
+    <!-- 1. 로그인 / 회원가입 모달 (기본: 로그인 모드) -->
     <div id="authModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
             <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -59,27 +59,11 @@
 
             <div class="text-center mb-6">
                 <h2 class="text-3xl font-black font-serif italic mb-1 tracking-tight">Woongstagram</h2>
-                <p class="text-xs text-slate-500" id="authModalSubtitle">친구들의 사진과 동영상을 보려면 가입하세요.</p>
+                <p class="text-xs text-slate-500" id="authModalSubtitle">Woongstagram에 로그인하세요.</p>
             </div>
 
-            <!-- 회원가입 폼 -->
-            <div id="signupFormArea" class="space-y-2.5 text-xs">
-                <input type="text" id="signupUsername" placeholder="사용자 이름 (아이디)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
-                <input type="text" id="signupName" placeholder="성명 (프로필 이름)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
-                <input type="email" id="signupEmail" placeholder="이메일 주소" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
-                
-                <div class="relative">
-                    <input type="password" id="signupPassword" placeholder="비밀번호" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
-                    <i onclick="togglePasswordVisibility('signupPassword', this)" class="fa-regular fa-eye absolute right-3 top-3 text-slate-400 cursor-pointer"></i>
-                </div>
-
-                <button onclick="handleSignupSubmit()" class="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition shadow-sm mt-2">
-                    가입
-                </button>
-            </div>
-
-            <!-- 로그인 폼 (기본 숨김) -->
-            <div id="loginFormArea" class="space-y-2.5 text-xs hidden">
+            <!-- 로그인 폼 (기본 가시화) -->
+            <div id="loginFormArea" class="space-y-2.5 text-xs">
                 <input type="text" id="loginUsername" placeholder="사용자 이름 (아이디)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
                 <div class="relative">
                     <input type="password" id="loginPassword" placeholder="비밀번호" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
@@ -91,14 +75,30 @@
                 </button>
             </div>
 
+            <!-- 회원가입 폼 (기본 숨김) -->
+            <div id="signupFormArea" class="space-y-2.5 text-xs hidden">
+                <input type="text" id="signupUsername" placeholder="사용자 이름 (아이디)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
+                <input type="text" id="signupName" placeholder="성명 (프로필 이름)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
+                <input type="email" id="signupEmail" placeholder="이메일 주소" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
+                
+                <div class="relative">
+                    <input type="password" id="signupPassword" placeholder="비밀번호" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
+                    <i onclick="togglePasswordVisibility('signupPassword', this)" class="fa-regular fa-eye absolute right-3 top-3 text-slate-400 cursor-pointer"></i>
+                </div>
+
+                <button onclick="handleSignupSubmit()" class="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition shadow-sm mt-2">
+                    가입하기
+                </button>
+            </div>
+
             <div class="mt-5 pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
-                <span id="authToggleText">계정이 있으신가요?</span>
-                <button onclick="toggleAuthMode()" id="authToggleBtn" class="text-blue-500 font-bold ml-1 hover:underline">로그인</button>
+                <span id="authToggleText">계정이 없으신가요?</span>
+                <button onclick="toggleAuthMode()" id="authToggleBtn" class="text-blue-500 font-bold ml-1 hover:underline">가입하기</button>
             </div>
         </div>
     </div>
 
-    <!-- 2. 새 게시글 만들기 모달 (이미지 URL 첨부 가능) -->
+    <!-- 2. 새 게시글 만들기 모달 -->
     <div id="createPostModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
             <button onclick="closeCreatePostModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -120,21 +120,23 @@
     <!-- Scripts -->
     <script>
         let currentUser = null;
-        let isLoginView = false;
+        let isSignupView = false;
 
         document.addEventListener("DOMContentLoaded", () => {
             checkLoginStatus();
             loadPosts();
         });
 
-        // 로그인 검증 및 사이드바 갱신
         function checkLoginStatus() {
             fetch('/api/me')
                 .then(res => res.json())
                 .then(data => {
                     const card = document.getElementById('profileCard');
+                    const headerBtn = document.getElementById('headerProfileBtn');
+
                     if (data.logged_in) {
                         currentUser = data.username;
+                        headerBtn.classList.remove('hidden');
                         card.innerHTML = `
                             <div class="flex items-center justify-between text-xs">
                                 <div class="flex items-center gap-3">
@@ -142,15 +144,16 @@
                                         ${currentUser.substring(0, 2)}
                                     </div>
                                     <div class="flex flex-col">
-                                        <span class="font-bold text-slate-900">${escapeHtml(data.name)}</span>
+                                        <a href="/profile" class="font-bold text-slate-900 hover:underline">${escapeHtml(data.name)}</a>
                                         <span class="text-slate-400 text-[11px]">@${escapeHtml(currentUser)}</span>
                                     </div>
                                 </div>
-                                <button onclick="logout()" class="text-red-500 font-semibold text-[11px] hover:underline">로그아웃</button>
+                                <a href="/profile" class="text-blue-500 font-semibold text-[11px] hover:underline">프로필</a>
                             </div>
                         `;
                     } else {
                         currentUser = null;
+                        headerBtn.classList.add('hidden');
                         card.innerHTML = `
                             <p class="text-xs text-slate-500 mb-3 leading-relaxed">로그인하여 Woongstagram의 사진을 공유하고 소통해 보세요.</p>
                             <button onclick="openAuthModal()" class="w-full py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-lg transition shadow-sm">
@@ -161,7 +164,6 @@
                 });
         }
 
-        // 피드 목록 로드 (좋아요 연동)
         function loadPosts() {
             fetch('/api/posts')
                 .then(res => res.json())
@@ -178,7 +180,6 @@
                         const article = document.createElement('article');
                         article.className = "border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm";
                         
-                        // 이미지가 있을 시 출력, 없을 시 카드 스타일
                         const imageHtml = post.image_url ? 
                             `<img src="${escapeHtml(post.image_url)}" alt="Post Image" class="w-full max-h-[450px] object-cover border-y border-slate-100" onerror="this.src='https://picsum.photos/600/400'">` :
                             `<div class="bg-slate-50 p-8 text-center flex flex-col items-center justify-center border-y border-slate-100 min-h-[180px]">
@@ -223,13 +224,8 @@
                 });
         }
 
-        // 좋아요 토글 (서버 연동)
         function toggleLike(postId) {
-            if (!currentUser) {
-                alert('로그인이 필요한 기능입니다.');
-                openAuthModal();
-                return;
-            }
+            if (!currentUser) { alert('로그인이 필요합니다.'); openAuthModal(); return; }
 
             fetch(`/api/posts/${postId}/like`, { method: 'POST' })
                 .then(res => res.json())
@@ -237,7 +233,6 @@
                     if (data.status === 'success') {
                         const icon = document.getElementById(`likeIcon-${postId}`);
                         const count = document.getElementById(`likeCount-${postId}`);
-                        
                         if (data.is_liked) {
                             icon.className = "fa-solid fa-heart text-red-500 cursor-pointer transition scale-125";
                             setTimeout(() => icon.classList.remove('scale-125'), 150);
@@ -249,7 +244,6 @@
                 });
         }
 
-        // 댓글 로드 및 추가/삭제
         function loadComments(postId) {
             fetch(`/api/comments/${postId}`)
                 .then(res => res.json())
@@ -297,13 +291,10 @@
                 .then(data => { if (data.status === 'success') loadComments(postId); });
         }
 
-        function focusComment(postId) {
-            document.getElementById(`commentInput-${postId}`).focus();
-        }
+        function focusComment(postId) { document.getElementById(`commentInput-${postId}`).focus(); }
 
-        // 게시글 모달
         function openCreatePostModal() {
-            if (!currentUser) { alert('로그인이 필가합니다.'); openAuthModal(); return; }
+            if (!currentUser) { alert('로그인이 필요합니다.'); openAuthModal(); return; }
             document.getElementById('createPostModal').classList.remove('hidden');
         }
         function closeCreatePostModal() { document.getElementById('createPostModal').classList.add('hidden'); }
@@ -337,12 +328,12 @@
         function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
 
         function toggleAuthMode() {
-            isLoginView = !isLoginView;
-            document.getElementById('signupFormArea').classList.toggle('hidden', isLoginView);
-            document.getElementById('loginFormArea').classList.toggle('hidden', !isLoginView);
-            document.getElementById('authModalSubtitle').innerText = isLoginView ? 'Woongstagram에 로그인하세요.' : '친구들의 사진과 동영상을 보려면 가입하세요.';
-            document.getElementById('authToggleText').innerText = isLoginView ? '계정이 없으신가요?' : '계정이 있으신가요?';
-            document.getElementById('authToggleBtn').innerText = isLoginView ? '가입하기' : '로그인';
+            isSignupView = !isSignupView;
+            document.getElementById('loginFormArea').classList.toggle('hidden', isSignupView);
+            document.getElementById('signupFormArea').classList.toggle('hidden', !isSignupView);
+            document.getElementById('authModalSubtitle').innerText = isSignupView ? '친구들의 사진과 동영상을 보려면 가입하세요.' : 'Woongstagram에 로그인하세요.';
+            document.getElementById('authToggleText').innerText = isSignupView ? '계정이 있으신가요?' : '계정이 없으신가요?';
+            document.getElementById('authToggleBtn').innerText = isSignupView ? '로그인' : '가입하기';
         }
 
         function handleSignupSubmit() {
@@ -383,10 +374,6 @@
                     loadPosts();
                 } else { alert(data.message); }
             });
-        }
-
-        function logout() {
-            fetch('/api/logout', { method: 'POST' }).then(() => { checkLoginStatus(); loadPosts(); });
         }
 
         function togglePasswordVisibility(inputId, icon) {

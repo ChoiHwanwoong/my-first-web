@@ -9,7 +9,7 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # 1. 사용자 테이블 (이름, 이메일 추가)
+    # 1. 사용자 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,7 +20,7 @@ def init_db():
         )
     ''')
     
-    # 2. 게시글 테이블 (image_url 추가)
+    # 2. 게시글 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,7 +44,7 @@ def init_db():
         )
     ''')
 
-    # 4. 좋아요 기록 테이블 (사용자별 1회 제한)
+    # 4. 좋아요 기록 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS post_likes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,11 +62,26 @@ init_db()
 def index():
     return render_template('index.html')
 
+@app.route('/profile')
+def profile_page():
+    return render_template('profile.html')
+
 # --- 🔐 Auth APIs ---
 @app.route('/api/me', methods=['GET'])
 def get_me():
     if 'username' in session:
-        return jsonify({'logged_in': True, 'username': session['username'], 'name': session.get('name', session['username'])})
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('SELECT username, name, email FROM users WHERE username = ?', (session['username'],))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return jsonify({
+                'logged_in': True,
+                'username': row[0],
+                'name': row[1] or row[0],
+                'email': row[2] or ''
+            })
     return jsonify({'logged_in': False})
 
 @app.route('/api/signup', methods=['POST'])
@@ -128,7 +143,6 @@ def get_posts():
     posts = []
     for r in rows:
         post_id = r[0]
-        # 현재 로그인한 사용자가 좋아요를 눌렀는지 확인
         liked = False
         if user:
             cursor.execute('SELECT 1 FROM post_likes WHERE post_id = ? AND username = ?', (post_id, user))
@@ -144,6 +158,22 @@ def get_posts():
             'is_liked': liked
         })
     conn.close()
+    return jsonify({'status': 'success', 'posts': posts})
+
+# 내 작성글만 가져오기 API
+@app.route('/api/my-posts', methods=['GET'])
+def get_my_posts():
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
+
+    username = session['username']
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, title, content, image_url, likes FROM posts WHERE username = ? ORDER BY id DESC', (username,))
+    rows = cursor.fetchall()
+    conn.close()
+
+    posts = [{'id': r[0], 'title': r[1], 'content': r[2], 'image_url': r[3], 'likes': r[4]} for r in rows]
     return jsonify({'status': 'success', 'posts': posts})
 
 @app.route('/api/posts', methods=['POST'])
@@ -169,7 +199,6 @@ def create_post():
 
     return jsonify({'status': 'success'})
 
-# --- ❤️ Like Toggle API ---
 @app.route('/api/posts/<int:post_id>/like', methods=['POST'])
 def toggle_like(post_id):
     if 'username' not in session:
@@ -183,12 +212,10 @@ def toggle_like(post_id):
     liked = cursor.fetchone()
 
     if liked:
-        # 좋아요 취소
         cursor.execute('DELETE FROM post_likes WHERE post_id = ? AND username = ?', (post_id, username))
         cursor.execute('UPDATE posts SET likes = likes - 1 WHERE id = ? AND likes > 0', (post_id,))
         is_liked = False
     else:
-        # 좋아요 추가
         cursor.execute('INSERT INTO post_likes (post_id, username) VALUES (?, ?)', (post_id, username))
         cursor.execute('UPDATE posts SET likes = likes + 1 WHERE id = ?', (post_id,))
         is_liked = True

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>프로필 • Woongstagram</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-white text-slate-900 font-sans antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-200 bg-white sticky top-0 z-40">
+        <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+            <a href="/" class="text-2xl font-black tracking-tight italic font-serif text-slate-900 select-none">
+                Woongstagram
+            </a>
+
+            <div class="flex items-center gap-5 text-xl text-slate-800">
+                <a href="/" class="hover:text-slate-500 transition" title="홈"><i class="fa-solid fa-house"></i></a>
+                <a href="/profile" class="text-slate-900 font-bold" title="프로필"><i class="fa-solid fa-user"></i></a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Profile Main Section -->
+    <main class="max-w-4xl mx-auto px-4 py-10 w-full flex-1">
+        
+        <!-- Profile Header Area -->
+        <div id="profileHeader" class="flex flex-col sm:flex-row items-center sm:items-start gap-8 pb-10 border-b border-slate-200">
+            <!-- Avatar -->
+            <div class="w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-3xl uppercase shadow-md shrink-0">
+                <span id="profileAvatarText">WO</span>
+            </div>
+
+            <!-- Profile Meta Info -->
+            <div class="flex flex-col gap-4 text-center sm:text-left flex-1">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <h1 id="profileUsername" class="text-xl font-normal text-slate-900">@username</h1>
+                    <button onclick="logout()" class="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg border border-slate-200 transition">
+                        로그아웃
+                    </button>
+                </div>
+
+                <div class="flex justify-center sm:justify-start gap-8 text-xs text-slate-800">
+                    <div>게시물 <span id="postCount" class="font-bold">0</span></div>
+                    <div>팔로워 <span class="font-bold">128</span></div>
+                    <div>팔로우 <span class="font-bold">85</span></div>
+                </div>
+
+                <div class="text-xs space-y-1">
+                    <p id="profileName" class="font-bold text-slate-900">사용자 이름</p>
+                    <p id="profileEmail" class="text-slate-500">user@email.com</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Nav -->
+        <div class="flex justify-center border-t border-slate-200 -mt-[1px]">
+            <div class="flex items-center gap-2 py-3 border-t-2 border-slate-900 font-bold text-xs text-slate-900 tracking-wider">
+                <i class="fa-solid fa-table-cells text-sm"></i> 게시물
+            </div>
+        </div>
+
+        <!-- My Posts Grid -->
+        <div id="myPostsGrid" class="grid grid-cols-3 gap-1 sm:gap-4 mt-2">
+            <!-- Javascript로 렌더링 -->
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-100 py-6 text-center text-slate-400 text-xs">
+        <p>© 2026 WOONGSTAGRAM PROFILE PAGE</p>
+    </footer>
+
+    <!-- Script -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            loadUserProfile();
+            loadMyPosts();
+        });
+
+        function loadUserProfile() {
+            fetch('/api/me')
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.logged_in) {
+                        alert('로그인이 필요한 페이지입니다.');
+                        window.location.href = '/';
+                        return;
+                    }
+                    document.getElementById('profileUsername').innerText = `@${data.username}`;
+                    document.getElementById('profileName').innerText = data.name;
+                    document.getElementById('profileEmail').innerText = data.email || '등록된 이메일 없음';
+                    document.getElementById('profileAvatarText').innerText = data.username.substring(0, 2);
+                });
+        }
+
+        function loadMyPosts() {
+            fetch('/api/my-posts')
+                .then(res => res.json())
+                .then(data => {
+                    const grid = document.getElementById('myPostsGrid');
+                    grid.innerHTML = '';
+
+                    if (data.status === 'success') {
+                        document.getElementById('postCount').innerText = data.posts.length;
+
+                        if (data.posts.length === 0) {
+                            grid.className = "text-center py-16 text-xs text-slate-400 col-span-3";
+                            grid.innerHTML = '작성한 게시물이 없습니다.';
+                            return;
+                        }
+
+                        data.posts.forEach(post => {
+                            const card = document.createElement('div');
+                            card.className = "aspect-square bg-slate-100 rounded-lg overflow-hidden relative group cursor-pointer border border-slate-200";
+                            
+                            const img = post.image_url ? 
+                                `<img src="${escapeHtml(post.image_url)}" class="w-full h-full object-cover" onerror="this.src='https://picsum.photos/300/300'">` :
+                                `<div class="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50">
+                                    <span class="font-bold text-xs text-slate-800 line-clamp-2">${escapeHtml(post.title)}</span>
+                                </div>`;
+
+                            card.innerHTML = `
+                                ${img}
+                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-bold text-xs gap-3">
+                                    <span><i class="fa-solid fa-heart mr-1"></i> ${post.likes}</span>
+                                </div>
+                            `;
+                            grid.appendChild(card);
+                        });
+                    }
+                });
+        }
+
+        function logout() {
+            fetch('/api/logout', { method: 'POST' }).then(() => { window.location.href = '/'; });
+        }
+
+        function escapeHtml(text) { return text ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : ''; }
+    </script>
+</body>
+</html>

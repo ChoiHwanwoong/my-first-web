@@ -1,9 +1,16 @@
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, send_from_directory
 import sqlite3
+import os
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_for_woongstagram_app'
 DB_PATH = 'comments.db'
+
+# 업로드 폴더 설정
+UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -51,6 +58,18 @@ def init_db():
             post_id INTEGER NOT NULL,
             username TEXT NOT NULL,
             UNIQUE(post_id, username)
+        )
+    ''')
+
+    # 5. 스토리 테이블
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS stories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            title TEXT NOT NULL,
+            desc TEXT NOT NULL,
+            image_url TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     conn.commit()
@@ -131,6 +150,63 @@ def logout():
     session.clear()
     return jsonify({'status': 'success'})
 
+# --- 📁 파일 업로드 API ---
+@app.route('/api/upload', methods=['POST'])
+def upload_file():
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
+
+    if 'file' not in request.files:
+        return jsonify({'status': 'error', 'message': '파일이 선택되지 않았습니다.'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'status': 'error', 'message': '선택된 파일이 없습니다.'}), 400
+
+    if file:
+        filename = secure_filename(file.filename)
+        # 파일명 중복 방지 (사용자명 접두사)
+        save_filename = f"{session['username']}_{int(os.path.getmtime(DB_PATH) if os.path.exists(DB_PATH) else 0)}_{filename}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], save_filename)
+        file.save(filepath)
+        image_url = f"/static/uploads/{save_filename}"
+        return jsonify({'status': 'success', 'image_url': image_url})
+
+# --- 📸 Story APIs ---
+@app.route('/api/stories', methods=['GET'])
+def get_stories():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, username, title, desc, image_url FROM stories ORDER BY id DESC')
+    rows = cursor.fetchall()
+    conn.close()
+
+    stories = [{'id': r[0], 'username': r[1], 'title': r[2], 'desc': r[3], 'image_url': r[4]} for r in rows]
+    return jsonify({'status': 'success', 'stories': stories})
+
+@app.route('/api/stories', methods=['POST'])
+def create_story():
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
+
+    data = request.json
+    title = data.get('title', '').strip()
+    desc = data.get('desc', '').strip()
+    image_url = data.get('image_url', '').strip()
+
+    if not title:
+        return jsonify({'status': 'error', 'message': '제목을 입력해 주세요.'}), 400
+
+    username = session['username']
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('INSERT INTO stories (username, title, desc, image_url) VALUES (?, ?, ?, ?)', 
+                   (username, title, desc, image_url))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'status': 'success'})
+
 # --- 📝 Post APIs ---
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
@@ -160,7 +236,6 @@ def get_posts():
     conn.close()
     return jsonify({'status': 'success', 'posts': posts})
 
-# 내 작성글만 가져오기 API
 @app.route('/api/my-posts', methods=['GET'])
 def get_my_posts():
     if 'username' not in session:

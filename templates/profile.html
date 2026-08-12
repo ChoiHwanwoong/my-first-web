@@ -29,12 +29,10 @@
         
         <!-- Profile Header Area -->
         <div id="profileHeader" class="flex flex-col sm:flex-row items-center sm:items-start gap-8 pb-10 border-b border-slate-200">
-            <!-- Avatar -->
             <div class="w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-3xl uppercase shadow-md shrink-0">
                 <span id="profileAvatarText">WO</span>
             </div>
 
-            <!-- Profile Meta Info -->
             <div class="flex flex-col gap-4 text-center sm:text-left flex-1">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-4">
                     <h1 id="profileUsername" class="text-xl font-normal text-slate-900">@username</h1>
@@ -56,26 +54,20 @@
             </div>
         </div>
 
-        <!-- Tab Nav -->
         <div class="flex justify-center border-t border-slate-200 -mt-[1px]">
             <div class="flex items-center gap-2 py-3 border-t-2 border-slate-900 font-bold text-xs text-slate-900 tracking-wider">
                 <i class="fa-solid fa-table-cells text-sm"></i> 게시물
             </div>
         </div>
 
-        <!-- My Posts Grid -->
-        <div id="myPostsGrid" class="grid grid-cols-3 gap-1 sm:gap-4 mt-2">
-            <!-- Javascript로 렌더링 -->
-        </div>
+        <div id="myPostsGrid" class="grid grid-cols-3 gap-1 sm:gap-4 mt-2"></div>
 
     </main>
 
-    <!-- Footer -->
     <footer class="border-t border-slate-100 py-6 text-center text-slate-400 text-xs">
         <p>© 2026 WOONGSTAGRAM PROFILE PAGE</p>
     </footer>
 
-    <!-- Script -->
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             loadUserProfile();
@@ -119,7 +111,7 @@
                             card.className = "aspect-square bg-slate-100 rounded-lg overflow-hidden relative group cursor-pointer border border-slate-200";
                             
                             const img = post.image_url ? 
-                                `<img src="${escapeHtml(post.image_url)}" class="w-full h-full object-cover" onerror="this.src='https://picsum.photos/300/300'">` :
+                                `<img src="${escapeHtml(post.image_url)}" class="w-full h-full object-cover">` :
                                 `<div class="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50">
                                     <span class="font-bold text-xs text-slate-800 line-clamp-2">${escapeHtml(post.title)}</span>
                                 </div>`;

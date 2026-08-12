@@ -7,6 +7,12 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .story-ring { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+        .story-viewed { background: #cbd5e1 !important; }
+        @keyframes progress { from { width: 0%; } to { width: 100%; } }
+        .animate-progress { animation: progress 5s linear forwards; }
+    </style>
 </head>
 <body class="bg-white text-slate-900 font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-pink-500 selection:text-white">
 
@@ -36,6 +42,22 @@
         
         <!-- Feed Column (2 Cols) -->
         <section class="md:col-span-2 space-y-6">
+            
+            <!-- Story Bar -->
+            <div class="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4 overflow-x-auto scrollbar-hide shadow-sm select-none">
+                <!-- Add Story Button -->
+                <div onclick="openCreateStoryModal()" class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer group">
+                    <div class="w-14 h-14 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-500 group-hover:border-blue-500 group-hover:text-blue-500 transition">
+                        <i class="fa-solid fa-plus text-lg"></i>
+                    </div>
+                    <span class="text-[11px] font-semibold text-slate-600 truncate w-14 text-center">내 스토리</span>
+                </div>
+
+                <!-- Dynamic Stories Container -->
+                <div id="storiesContainer" class="flex items-center gap-4"></div>
+            </div>
+
+            <!-- Feed Posts -->
             <div id="postFeedContainer" class="space-y-6"></div>
         </section>
 
@@ -50,7 +72,7 @@
 
     </main>
 
-    <!-- 1. 로그인 / 회원가입 모달 (기본: 로그인 모드) -->
+    <!-- 1. 로그인 / 회원가입 모달 -->
     <div id="authModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
             <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -62,33 +84,24 @@
                 <p class="text-xs text-slate-500" id="authModalSubtitle">Woongstagram에 로그인하세요.</p>
             </div>
 
-            <!-- 로그인 폼 (기본 가시화) -->
             <div id="loginFormArea" class="space-y-2.5 text-xs">
                 <input type="text" id="loginUsername" placeholder="사용자 이름 (아이디)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
                 <div class="relative">
                     <input type="password" id="loginPassword" placeholder="비밀번호" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
                     <i onclick="togglePasswordVisibility('loginPassword', this)" class="fa-regular fa-eye absolute right-3 top-3 text-slate-400 cursor-pointer"></i>
                 </div>
-                
-                <button onclick="handleLoginSubmit()" class="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition shadow-sm mt-2">
-                    로그인
-                </button>
+                <button onclick="handleLoginSubmit()" class="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition shadow-sm mt-2">로그인</button>
             </div>
 
-            <!-- 회원가입 폼 (기본 숨김) -->
             <div id="signupFormArea" class="space-y-2.5 text-xs hidden">
                 <input type="text" id="signupUsername" placeholder="사용자 이름 (아이디)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
                 <input type="text" id="signupName" placeholder="성명 (프로필 이름)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
                 <input type="email" id="signupEmail" placeholder="이메일 주소" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
-                
                 <div class="relative">
                     <input type="password" id="signupPassword" placeholder="비밀번호" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
                     <i onclick="togglePasswordVisibility('signupPassword', this)" class="fa-regular fa-eye absolute right-3 top-3 text-slate-400 cursor-pointer"></i>
                 </div>
-
-                <button onclick="handleSignupSubmit()" class="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition shadow-sm mt-2">
-                    가입하기
-                </button>
+                <button onclick="handleSignupSubmit()" class="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition shadow-sm mt-2">가입하기</button>
             </div>
 
             <div class="mt-5 pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
@@ -98,7 +111,7 @@
         </div>
     </div>
 
-    <!-- 2. 새 게시글 만들기 모달 -->
+    <!-- 2. 게시물 작성 모달 (파일 선택 첨부 기능 추가) -->
     <div id="createPostModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
             <button onclick="closeCreatePostModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -109,10 +122,64 @@
 
             <div class="space-y-3 text-xs">
                 <input type="text" id="postTitleInput" placeholder="제목" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
-                <input type="text" id="postImageUrlInput" placeholder="사진 이미지 URL (예: https://picsum.photos/600/400)" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
+                
+                <!-- File Upload Input -->
+                <div class="border border-slate-200 rounded-lg p-2.5 bg-slate-50 flex items-center justify-between">
+                    <input type="file" id="postFileInput" accept="image/*" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100">
+                </div>
+
                 <textarea id="postContentInput" rows="3" placeholder="문구 입력..." class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400 resize-none"></textarea>
                 
                 <button onclick="submitNewPost()" class="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition">공유하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 스토리 작성 모달 -->
+    <div id="createStoryModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
+            <button onclick="closeCreateStoryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <h3 class="text-sm font-bold text-center border-b border-slate-100 pb-3 mb-4">내 스토리 올리기</h3>
+
+            <div class="space-y-3 text-xs">
+                <input type="text" id="storyTitleInput" placeholder="스토리 제목" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
+                
+                <div class="border border-slate-200 rounded-lg p-2.5 bg-slate-50 flex items-center justify-between">
+                    <input type="file" id="storyFileInput" accept="image/*" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100">
+                </div>
+
+                <input type="text" id="storyDescInput" placeholder="스토리 문구 (선택)" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
+                
+                <button onclick="submitNewStory()" class="w-full py-2.5 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-lg transition">스토리 올리기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 스토리 뷰어 모달 -->
+    <div id="storyModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center">
+        <button onclick="closeStoryModal()" class="absolute top-5 right-5 text-white text-2xl hover:text-slate-400 z-50">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="w-full max-w-sm h-[580px] bg-slate-900 rounded-2xl overflow-hidden relative flex flex-col justify-between shadow-2xl border border-slate-800">
+            <div class="p-4 z-10 bg-gradient-to-b from-black/80 to-transparent">
+                <div class="w-full bg-white/30 h-1 rounded-full mb-3 overflow-hidden">
+                    <div id="storyProgress" class="bg-white h-full w-0"></div>
+                </div>
+                <div class="flex items-center justify-between text-white text-xs">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-full bg-pink-500 flex items-center justify-center font-bold text-[10px]">S</div>
+                        <span id="storyUser" class="font-semibold">username</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="storyBg" class="absolute inset-0 flex flex-col items-center justify-center text-white p-8 text-center bg-cover bg-center">
+                <h3 id="storyTitle" class="text-2xl font-bold tracking-tight mb-2 drop-shadow-md">Story Title</h3>
+                <p id="storyDesc" class="text-xs text-white/90 leading-relaxed max-w-xs drop-shadow-md">Story Description Content</p>
             </div>
         </div>
     </div>
@@ -121,9 +188,11 @@
     <script>
         let currentUser = null;
         let isSignupView = false;
+        let storyTimer = null;
 
         document.addEventListener("DOMContentLoaded", () => {
             checkLoginStatus();
+            loadStories();
             loadPosts();
         });
 
@@ -164,6 +233,32 @@
                 });
         }
 
+        // 스토리 목록 로드
+        function loadStories() {
+            fetch('/api/stories')
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('storiesContainer');
+                    container.innerHTML = '';
+                    if (data.status === 'success') {
+                        data.stories.forEach(s => {
+                            const item = document.createElement('div');
+                            item.className = "flex flex-col items-center gap-1 min-w-[64px] cursor-pointer group";
+                            item.onclick = () => showStoryModal(item, s.username, s.title, s.desc, s.image_url);
+                            item.innerHTML = `
+                                <div class="w-14 h-14 rounded-full p-[2px] story-ring transition group-hover:scale-105">
+                                    <div class="w-full h-full rounded-full bg-slate-900 flex items-center justify-center font-bold text-xs text-white border-2 border-white uppercase overflow-hidden">
+                                        ${s.image_url ? `<img src="${s.image_url}" class="w-full h-full object-cover">` : s.username.substring(0, 2)}
+                                    </div>
+                                </div>
+                                <span class="text-[11px] text-slate-600 truncate w-14 text-center">${escapeHtml(s.username)}</span>
+                            `;
+                            container.appendChild(item);
+                        });
+                    }
+                });
+        }
+
         function loadPosts() {
             fetch('/api/posts')
                 .then(res => res.json())
@@ -181,7 +276,7 @@
                         article.className = "border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm";
                         
                         const imageHtml = post.image_url ? 
-                            `<img src="${escapeHtml(post.image_url)}" alt="Post Image" class="w-full max-h-[450px] object-cover border-y border-slate-100" onerror="this.src='https://picsum.photos/600/400'">` :
+                            `<img src="${escapeHtml(post.image_url)}" alt="Post Image" class="w-full max-h-[450px] object-cover border-y border-slate-100">` :
                             `<div class="bg-slate-50 p-8 text-center flex flex-col items-center justify-center border-y border-slate-100 min-h-[180px]">
                                 <h3 class="text-base font-bold text-slate-800 mb-1">${escapeHtml(post.title)}</h3>
                             </div>`;
@@ -224,9 +319,9 @@
                 });
         }
 
+        // 좋아요 토글
         function toggleLike(postId) {
             if (!currentUser) { alert('로그인이 필요합니다.'); openAuthModal(); return; }
-
             fetch(`/api/posts/${postId}/like`, { method: 'POST' })
                 .then(res => res.json())
                 .then(data => {
@@ -278,10 +373,7 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data.status === 'success') {
-                    loadComments(postId);
-                    input.value = '';
-                }
+                if (data.status === 'success') { loadComments(postId); input.value = ''; }
             });
         }
 
@@ -293,18 +385,34 @@
 
         function focusComment(postId) { document.getElementById(`commentInput-${postId}`).focus(); }
 
+        // 게시물 및 파일 업로드 처리
         function openCreatePostModal() {
             if (!currentUser) { alert('로그인이 필요합니다.'); openAuthModal(); return; }
             document.getElementById('createPostModal').classList.remove('hidden');
         }
         function closeCreatePostModal() { document.getElementById('createPostModal').classList.add('hidden'); }
 
-        function submitNewPost() {
+        async function submitNewPost() {
             const title = document.getElementById('postTitleInput').value.trim();
-            const imageUrl = document.getElementById('postImageUrlInput').value.trim();
             const content = document.getElementById('postContentInput').value.trim();
+            const fileInput = document.getElementById('postFileInput');
+            let imageUrl = '';
 
             if (!title || !content) { alert('제목과 내용을 입력해 주세요.'); return; }
+
+            // 첨부 파일이 있을 시 서버에 업로드
+            if (fileInput.files.length > 0) {
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+                const uploadData = await uploadRes.json();
+                if (uploadData.status === 'success') {
+                    imageUrl = uploadData.image_url;
+                } else {
+                    alert('사진 업로드 실패: ' + uploadData.message);
+                    return;
+                }
+            }
 
             fetch('/api/posts', {
                 method: 'POST',
@@ -316,14 +424,88 @@
                 if (data.status === 'success') {
                     closeCreatePostModal();
                     document.getElementById('postTitleInput').value = '';
-                    document.getElementById('postImageUrlInput').value = '';
+                    document.getElementById('postFileInput').value = '';
                     document.getElementById('postContentInput').value = '';
                     loadPosts();
                 }
             });
         }
 
-        // 인증 모달 제어
+        // 스토리 올리기 처리
+        function openCreateStoryModal() {
+            if (!currentUser) { alert('로그인이 필요합니다.'); openAuthModal(); return; }
+            document.getElementById('createStoryModal').classList.remove('hidden');
+        }
+        function closeCreateStoryModal() { document.getElementById('createStoryModal').classList.add('hidden'); }
+
+        async function submitNewStory() {
+            const title = document.getElementById('storyTitleInput').value.trim();
+            const desc = document.getElementById('storyDescInput').value.trim();
+            const fileInput = document.getElementById('storyFileInput');
+            let imageUrl = '';
+
+            if (!title) { alert('스토리 제목을 입력해 주세요.'); return; }
+
+            if (fileInput.files.length > 0) {
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+                const uploadData = await uploadRes.json();
+                if (uploadData.status === 'success') {
+                    imageUrl = uploadData.image_url;
+                }
+            }
+
+            fetch('/api/stories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: title, desc: desc, image_url: imageUrl })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    closeCreateStoryModal();
+                    document.getElementById('storyTitleInput').value = '';
+                    document.getElementById('storyFileInput').value = '';
+                    document.getElementById('storyDescInput').value = '';
+                    loadStories();
+                }
+            });
+        }
+
+        function showStoryModal(el, username, title, desc, imageUrl) {
+            const ring = el.querySelector('.story-ring');
+            if (ring) { ring.classList.remove('story-ring'); ring.classList.add('story-viewed'); }
+
+            document.getElementById('storyUser').innerText = username;
+            document.getElementById('storyTitle').innerText = title;
+            document.getElementById('storyDesc').innerText = desc;
+            
+            const bg = document.getElementById('storyBg');
+            if (imageUrl) {
+                bg.style.backgroundImage = `url('${imageUrl}')`;
+            } else {
+                bg.style.backgroundImage = 'none';
+                bg.className = "absolute inset-0 flex flex-col items-center justify-center text-white p-8 text-center bg-gradient-to-br from-pink-500 to-rose-600";
+            }
+
+            const modal = document.getElementById('storyModal');
+            const progress = document.getElementById('storyProgress');
+            modal.classList.remove('hidden');
+            progress.classList.remove('animate-progress');
+            void progress.offsetWidth;
+            progress.classList.add('animate-progress');
+
+            clearTimeout(storyTimer);
+            storyTimer = setTimeout(() => closeStoryModal(), 5000);
+        }
+
+        function closeStoryModal() {
+            document.getElementById('storyModal').classList.add('hidden');
+            clearTimeout(storyTimer);
+        }
+
+        // Auth Modals
         function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); }
         function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
 
@@ -349,11 +531,8 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data.status === 'success') {
-                    closeAuthModal();
-                    checkLoginStatus();
-                    loadPosts();
-                } else { alert(data.message); }
+                if (data.status === 'success') { closeAuthModal(); checkLoginStatus(); loadPosts(); }
+                else alert(data.message);
             });
         }
 
@@ -368,11 +547,8 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data.status === 'success') {
-                    closeAuthModal();
-                    checkLoginStatus();
-                    loadPosts();
-                } else { alert(data.message); }
+                if (data.status === 'success') { closeAuthModal(); checkLoginStatus(); loadPosts(); }
+                else alert(data.message);
             });
         }
 

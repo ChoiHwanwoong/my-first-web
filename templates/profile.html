@@ -41,8 +41,8 @@
 
                 <div class="flex justify-center sm:justify-start gap-8 text-xs text-slate-800">
                     <div>게시물 <span id="postCount" class="font-bold">0</span></div>
-                    <div>팔로워 <span class="font-bold">128</span></div>
-                    <div>팔로우 <span class="font-bold">85</span></div>
+                    <div onclick="openFollowListModal('followers')" class="cursor-pointer hover:underline">팔로워 <span id="followerCount" class="font-bold">0</span></div>
+                    <div onclick="openFollowListModal('following')" class="cursor-pointer hover:underline">팔로우 <span id="followingCount" class="font-bold">0</span></div>
                 </div>
 
                 <div class="text-xs space-y-1">
@@ -62,14 +62,62 @@
 
     </main>
 
+    <!-- 1. 게시글 상세 모달 -->
+    <div id="postDetailModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl relative flex flex-col md:flex-row max-h-[85vh]">
+            <button onclick="closePostDetailModal()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 z-10 bg-white/80 p-1 rounded-full">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <!-- Image Area -->
+            <div id="modalImageArea" class="bg-slate-900 md:w-1/2 flex items-center justify-center min-h-[250px]"></div>
+
+            <!-- Content & Comments Area -->
+            <div class="p-4 md:w-1/2 flex flex-col justify-between text-xs overflow-y-auto bg-white">
+                <div>
+                    <div class="flex items-center gap-2 pb-3 mb-3 border-b border-slate-100">
+                        <span id="modalUserAvatar" class="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold uppercase"></span>
+                        <a id="modalUsername" href="#" class="font-bold text-slate-900 hover:underline"></a>
+                    </div>
+                    
+                    <h3 id="modalTitle" class="font-bold text-slate-900 mb-1"></h3>
+                    <p id="modalContent" class="text-slate-700 leading-relaxed mb-4 pb-3 border-b border-slate-100"></p>
+
+                    <!-- Comments List -->
+                    <div id="modalCommentsList" class="space-y-2 text-[11px] mb-4"></div>
+                </div>
+
+                <!-- Input -->
+                <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <input type="text" id="modalCommentInput" placeholder="댓글 달기..." class="w-full text-xs outline-none bg-transparent text-slate-800 placeholder-slate-400">
+                    <button id="modalCommentSubmitBtn" class="text-blue-500 font-semibold text-xs ml-2 hover:text-blue-700 whitespace-nowrap">게시</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 팔로워 / 팔로잉 유저 목록 모달 -->
+    <div id="followListModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl relative">
+            <button onclick="closeFollowListModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <h3 id="followListTitle" class="text-sm font-bold text-center border-b border-slate-100 pb-3 mb-4">팔로워</h3>
+
+            <div id="followUsersContainer" class="space-y-3 text-xs max-h-60 overflow-y-auto"></div>
+        </div>
+    </div>
+
     <footer class="border-t border-slate-100 py-6 text-center text-slate-400 text-xs">
         <p>© 2026 WOONGSTAGRAM PROFILE PAGE</p>
     </footer>
 
     <script>
-        // 서버에서 전달한 URL 대상 사용자 이름 파싱
         const pathParts = window.location.pathname.split('/');
         const targetUserFromUrl = pathParts.length > 2 && pathParts[2] ? pathParts[2] : null;
+        let currentProfileUser = null;
+        let loggedInUser = null;
 
         document.addEventListener("DOMContentLoaded", () => {
             initProfile();
@@ -78,10 +126,10 @@
         async function initProfile() {
             const meRes = await fetch('/api/me');
             const meData = await meRes.json();
+            if (meData.logged_in) loggedInUser = meData.username;
 
             let targetUser = targetUserFromUrl;
 
-            // URL에 타겟 사용자가 지정되지 않았다면 내 프로필 조회
             if (!targetUser) {
                 if (meData.logged_in) {
                     targetUser = meData.username;
@@ -92,7 +140,8 @@
                 }
             }
 
-            // 프로필 타겟 사용자 정보 로드
+            currentProfileUser = targetUser;
+
             const userRes = await fetch(`/api/users/${targetUser}`);
             const userData = await userRes.json();
 
@@ -106,6 +155,8 @@
             document.getElementById('profileUsername').innerText = `@${user.username}`;
             document.getElementById('profileName').innerText = user.name;
             document.getElementById('profileAvatarText').innerText = user.username.substring(0, 2);
+            document.getElementById('followerCount').innerText = user.follower_count;
+            document.getElementById('followingCount').innerText = user.following_count;
 
             const isMyProfile = meData.logged_in && (meData.username === user.username);
             const actionArea = document.getElementById('profileActionArea');
@@ -119,9 +170,14 @@
                 `;
             } else {
                 document.getElementById('profileEmail').innerText = '';
+                const btnText = user.is_following ? '팔로잉' : '팔로우';
+                const btnClass = user.is_following ? 
+                    "px-5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg border border-slate-200 transition" :
+                    "px-5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs rounded-lg transition shadow-sm";
+
                 actionArea.innerHTML = `
-                    <button onclick="toggleFollowBtn(this)" class="px-5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs rounded-lg transition shadow-sm">
-                        팔로우
+                    <button onclick="handleFollowToggle('${user.username}', this)" class="${btnClass}">
+                        ${btnText}
                     </button>
                 `;
             }
@@ -129,6 +185,66 @@
             loadUserPosts(user.username);
         }
 
+        // 팔로우 / 언팔로우 버튼 연동
+        function handleFollowToggle(targetUsername, btn) {
+            if (!loggedInUser) { alert('로그인이 필요합니다.'); window.location.href = '/'; return; }
+            fetch(`/api/follow/${targetUsername}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('followerCount').innerText = data.follower_count;
+                        if (data.is_following) {
+                            btn.innerText = '팔로잉';
+                            btn.className = "px-5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg border border-slate-200 transition";
+                        } else {
+                            btn.innerText = '팔로우';
+                            btn.className = "px-5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs rounded-lg transition shadow-sm";
+                        }
+                    } else { alert(data.message); }
+                });
+        }
+
+        // 팔로워 / 팔로잉 유저 목록 팝업 모달
+        function openFollowListModal(type) {
+            const title = type === 'followers' ? '팔로워' : '팔로우';
+            document.getElementById('followListTitle').innerText = title;
+            const container = document.getElementById('followUsersContainer');
+            container.innerHTML = '<div class="text-center text-slate-400">로딩 중...</div>';
+
+            fetch(`/api/users/${currentProfileUser}/${type}`)
+                .then(res => res.json())
+                .then(data => {
+                    container.innerHTML = '';
+                    if (data.status === 'success') {
+                        if (data.users.length === 0) {
+                            container.innerHTML = `<div class="text-center text-slate-400 py-4">${title} 목록이 없습니다.</div>`;
+                            return;
+                        }
+                        data.users.forEach(u => {
+                            const item = document.createElement('div');
+                            item.className = "flex items-center justify-between py-1";
+                            item.innerHTML = `
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-[10px] uppercase">
+                                        ${u.substring(0, 2)}
+                                    </div>
+                                    <a href="/profile/${u}" class="font-bold text-slate-800 hover:underline">${escapeHtml(u)}</a>
+                                </div>
+                                <a href="/profile/${u}" class="text-blue-500 font-semibold text-[11px] hover:underline">프로필</a>
+                            `;
+                            container.appendChild(item);
+                        });
+                    }
+                });
+
+            document.getElementById('followListModal').classList.remove('hidden');
+        }
+
+        function closeFollowListModal() {
+            document.getElementById('followListModal').classList.add('hidden');
+        }
+
+        // 게시글 그리드 로드
         function loadUserPosts(username) {
             fetch(`/api/posts/user/${username}`)
                 .then(res => res.json())
@@ -148,7 +264,8 @@
                         data.posts.forEach(post => {
                             const card = document.createElement('div');
                             card.className = "aspect-square bg-slate-100 rounded-lg overflow-hidden relative group cursor-pointer border border-slate-200";
-                            
+                            card.onclick = () => openPostDetailModal(post.id);
+
                             const img = post.image_url ? 
                                 `<img src="${escapeHtml(post.image_url)}" class="w-full h-full object-cover">` :
                                 `<div class="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50">
@@ -167,14 +284,72 @@
                 });
         }
 
-        function toggleFollowBtn(btn) {
-            if (btn.innerText === '팔로우') {
-                btn.innerText = '팔로잉';
-                btn.className = "px-5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg border border-slate-200 transition";
-            } else {
-                btn.innerText = '팔로우';
-                btn.className = "px-5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs rounded-lg transition shadow-sm";
-            }
+        // 게시물 클릭시 상세 보기 모달
+        function openPostDetailModal(postId) {
+            fetch(`/api/posts/${postId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const post = data.post;
+                        document.getElementById('modalUserAvatar').innerText = post.username.substring(0, 2);
+                        document.getElementById('modalUsername').innerText = `@${post.username}`;
+                        document.getElementById('modalUsername').href = `/profile/${post.username}`;
+                        document.getElementById('modalTitle').innerText = post.title;
+                        document.getElementById('modalContent').innerText = post.content;
+
+                        const imgArea = document.getElementById('modalImageArea');
+                        if (post.image_url) {
+                            imgArea.innerHTML = `<img src="${escapeHtml(post.image_url)}" class="w-full h-full object-contain max-h-[400px]">`;
+                        } else {
+                            imgArea.innerHTML = `<div class="text-white text-xs p-6 text-center">${escapeHtml(post.title)}</div>`;
+                        }
+
+                        const submitBtn = document.getElementById('modalCommentSubmitBtn');
+                        submitBtn.onclick = () => submitModalComment(post.id);
+
+                        loadModalComments(post.id);
+                        document.getElementById('postDetailModal').classList.remove('hidden');
+                    }
+                });
+        }
+
+        function closePostDetailModal() {
+            document.getElementById('postDetailModal').classList.add('hidden');
+        }
+
+        function loadModalComments(postId) {
+            fetch(`/api/comments/${postId}`)
+                .then(res => res.json())
+                .then(data => {
+                    const list = document.getElementById('modalCommentsList');
+                    list.innerHTML = '';
+                    if (data.status === 'success') {
+                        data.comments.forEach(c => {
+                            const p = document.createElement('p');
+                            p.innerHTML = `<a href="/profile/${c.username}" class="font-bold text-slate-900 hover:underline">${escapeHtml(c.username)}</a> ${escapeHtml(c.content)}`;
+                            list.appendChild(p);
+                        });
+                    }
+                });
+        }
+
+        function submitModalComment(postId) {
+            if (!loggedInUser) { alert('로그인이 필요합니다.'); return; }
+            const input = document.getElementById('modalCommentInput');
+            if (!input.value.trim()) return;
+
+            fetch('/api/comments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ post_id: postId, content: input.value.trim() })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    loadModalComments(postId);
+                    input.value = '';
+                }
+            });
         }
 
         function logout() {

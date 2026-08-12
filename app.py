@@ -76,6 +76,16 @@ def init_db():
             UNIQUE(story_id, username)
         )
     ''')
+
+    # 팔로우 테이블 (follower: 팔로우를 하는 사람, following: 팔로우를 당하는 대상)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS follows (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            follower TEXT NOT NULL,
+            following TEXT NOT NULL,
+            UNIQUE(follower, following)
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -85,7 +95,6 @@ init_db()
 def index():
     return render_template('index.html')
 
-# 프로필 페이지 라우팅 (본인 또는 타인)
 @app.route('/profile')
 @app.route('/profile/<username>')
 def profile_page(username=None):
@@ -109,25 +118,44 @@ def get_me():
             })
     return jsonify({'logged_in': False})
 
-# 특정 유저 정보 조회 API
 @app.route('/api/users/<username>', methods=['GET'])
 def get_user_profile(username):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute('SELECT username, name, email FROM users WHERE username = ?', (username,))
     row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        return jsonify({'status': 'error', 'message': '사용자를 찾을 수 없습니다.'}), 404
+
+    # 팔로워 수 & 팔로잉 수 수집
+    cursor.execute('SELECT COUNT(*) FROM follows WHERE following = ?', (username,))
+    follower_count = cursor.fetchone()[0]
+
+    cursor.execute('SELECT COUNT(*) FROM follows WHERE follower = ?', (username,))
+    following_count = cursor.fetchone()[0]
+
+    # 로그인한 사용자가 이 유저를 팔로우 중인지 확인
+    is_following = False
+    me = session.get('username')
+    if me:
+        cursor.execute('SELECT 1 FROM follows WHERE follower = ? AND following = ?', (me, username))
+        is_following = bool(cursor.fetchone())
+
     conn.close()
 
-    if row:
-        return jsonify({
-            'status': 'success',
-            'user': {
-                'username': row[0],
-                'name': row[1] or row[0],
-                'email': row[2] or ''
-            }
-        })
-    return jsonify({'status': 'error', 'message': '사용자를 찾을 수 없습니다.'}), 404
+    return jsonify({
+        'status': 'success',
+        'user': {
+            'username': row[0],
+            'name': row[1] or row[0],
+            'email': row[2] or '',
+            'follower_count': follower_count,
+            'following_count': following_count,
+            'is_following': is_following
+        }
+    })
 
 @app.route('/api/signup', methods=['POST'])
 def signup():
@@ -176,6 +204,55 @@ def logout():
     session.clear()
     return jsonify({'status': 'success'})
 
+# --- 🤝 Follow APIs ---
+@app.route('/api/follow/<target_username>', methods=['POST'])
+def toggle_follow(target_username):
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
+
+    me = session['username']
+    if me == target_username:
+        return jsonify({'status': 'error', 'message': '자기 자신은 팔로우할 수 없습니다.'}), 400
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT 1 FROM follows WHERE follower = ? AND following = ?', (me, target_username))
+    row = cursor.fetchone()
+
+    if row:
+        cursor.execute('DELETE FROM follows WHERE follower = ? AND following = ?', (me, target_username))
+        is_following = False
+    else:
+        cursor.execute('INSERT INTO follows (follower, following) VALUES (?, ?)', (me, target_username))
+        is_following = True
+
+    conn.commit()
+
+    cursor.execute('SELECT COUNT(*) FROM follows WHERE following = ?', (target_username,))
+    follower_count = cursor.fetchone()[0]
+    conn.close()
+
+    return jsonify({'status': 'success', 'is_following': is_following, 'follower_count': follower_count})
+
+@app.route('/api/users/<username>/followers', methods=['GET'])
+def get_followers(username):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT follower FROM follows WHERE following = ?', (username,))
+    rows = cursor.fetchall()
+    conn.close()
+    return jsonify({'status': 'success', 'users': [r[0] for r in rows]})
+
+@app.route('/api/users/<username>/following', methods=['GET'])
+def get_following(username):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT following FROM follows WHERE follower = ?', (username,))
+    rows = cursor.fetchall()
+    conn.close()
+    return jsonify({'status': 'success', 'users': [r[0] for r in rows]})
+
 # --- 📁 Upload API ---
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
@@ -197,7 +274,7 @@ def upload_file():
         image_url = f"/static/uploads/{save_filename}"
         return jsonify({'status': 'success', 'image_url': image_url})
 
-# --- 🤖 Recommendations API ---
+# --- 🤖 Recommendation API ---
 @app.route('/api/recommendations', methods=['GET'])
 def get_recommendations():
     conn = sqlite3.connect(DB_PATH)
@@ -356,7 +433,40 @@ def get_posts():
     conn.close()
     return jsonify({'status': 'success', 'posts': posts})
 
-# 특정 유저의 게시글만 가져오기 API
+# 단일 게시물 상세 조회 API
+@app.route('/api/posts/<int:post_id>', methods=['GET'])
+def get_single_post(post_id):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, username, title, content, image_url, likes, created_at FROM posts WHERE id = ?', (post_id,))
+    r = cursor.fetchone()
+
+    if not r:
+        conn.close()
+        return jsonify({'status': 'error', 'message': '게시글을 찾을 수 없습니다.'}), 404
+
+    user = session.get('username')
+    liked = False
+    if user:
+        cursor.execute('SELECT 1 FROM post_likes WHERE post_id = ? AND username = ?', (post_id, user))
+        liked = bool(cursor.fetchone())
+
+    conn.close()
+
+    return jsonify({
+        'status': 'success',
+        'post': {
+            'id': r[0],
+            'username': r[1],
+            'title': r[2],
+            'content': r[3],
+            'image_url': r[4],
+            'likes': r[5],
+            'created_at': r[6],
+            'is_liked': liked
+        }
+    })
+
 @app.route('/api/posts/user/<username>', methods=['GET'])
 def get_user_posts(username):
     conn = sqlite3.connect(DB_PATH)

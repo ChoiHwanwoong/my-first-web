@@ -3,183 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NAVER Cloud Platform | Developer Console</title>
+    <title>Instagram</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        naver: {
-                            green: '#03C75A',
-                            hover: '#02b350',
-                            navy: '#0B1A30',
-                            border: '#E3E7ED',
-                            bg: '#F8F9FA'
-                        }
-                    }
-                }
-            }
+    <style>
+        /* 인스타그램 스토리 링 그라데이션 */
+        .story-ring {
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
         }
-    </script>
+    </style>
 </head>
-<body class="bg-naver-bg text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-naver-green selection:text-white">
+<body class="bg-black text-white font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-pink-500 selection:text-white">
 
-    <!-- Header Navigation -->
-    <header class="bg-white border-b border-naver-border sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between text-xs">
-            <div class="flex items-center gap-8">
-                <!-- NAVER Cloud Style Logo -->
-                <div class="flex items-center gap-2 cursor-pointer select-none">
-                    <span class="text-naver-green font-black text-xl tracking-tighter">NAVER</span>
-                    <span class="text-slate-900 font-bold text-sm tracking-tight">Cloud Platform</span>
-                </div>
-                
-                <nav class="hidden md:flex items-center gap-6 font-semibold text-slate-600">
-                    <a href="#" class="text-naver-green font-bold border-b-2 border-naver-green py-4">Console</a>
-                    <a href="#" class="hover:text-slate-900 transition py-4">Products</a>
-                    <a href="#" class="hover:text-slate-900 transition py-4">Solutions</a>
-                    <a href="#" class="hover:text-slate-900 transition py-4">API Docs</a>
-                </nav>
+    <!-- 상단 헤더 / 좌측 네비바 (인스타그램 웹 스타일) -->
+    <header class="border-b border-zinc-800 bg-black sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+            <!-- 인스타그램 로고 폰트 느낌 -->
+            <div class="text-xl font-bold tracking-tight italic cursor-pointer font-serif">
+                Instagram
             </div>
 
-            <div class="flex items-center gap-4 text-slate-600 font-medium">
-                <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-mono bg-slate-100 px-2.5 py-1 rounded border border-slate-200">
-                    <span class="w-2 h-2 rounded-full bg-naver-green"></span>
-                    KR-WEST-1 (Seoul)
-                </span>
-                <a href="https://github.com/ChoiHwanwoong/my-first-web" target="_blank" 
-                   class="hover:text-slate-900 flex items-center gap-1.5 bg-slate-900 text-white px-3 py-1.5 rounded font-mono text-[11px] transition">
-                    <i class="fa-brands fa-github"></i> GitHub
+            <!-- 검색창 -->
+            <div class="hidden sm:flex items-center bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs w-64">
+                <i class="fa-solid fa-magnifying-glass text-zinc-500 mr-2"></i>
+                <input type="text" placeholder="검색" class="bg-transparent outline-none w-full text-zinc-200 placeholder-zinc-500">
+            </div>
+
+            <!-- 우측 아이콘 메뉴 -->
+            <div class="flex items-center gap-5 text-xl">
+                <i class="fa-solid fa-house cursor-pointer hover:text-zinc-400 transition"></i>
+                <i class="fa-paper-plane fa-regular cursor-pointer hover:text-zinc-400 transition"></i>
+                <i class="fa-square-plus fa-regular cursor-pointer hover:text-zinc-400 transition"></i>
+                <i class="fa-compass fa-regular cursor-pointer hover:text-zinc-400 transition"></i>
+                <i class="fa-heart fa-regular cursor-pointer hover:text-zinc-400 transition"></i>
+                <a href="https://github.com/ChoiHwanwoong/my-first-web" target="_blank" class="text-xs bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1 rounded font-mono transition">
+                    Git
                 </a>
             </div>
         </div>
     </header>
 
-    <!-- Main Console Body -->
-    <main class="max-w-7xl mx-auto px-6 py-8 w-full flex-1">
+    <!-- 메인 레이아웃 (피드 + 우측 프로필) -->
+    <main class="max-w-4xl mx-auto px-4 py-6 w-full flex-1 grid grid-cols-1 md:grid-cols-3 gap-8">
         
-        <!-- Top Status Bar -->
-        <div class="bg-white border border-naver-border rounded-lg p-6 mb-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-                <div class="flex items-center gap-2 mb-1">
-                    <span class="bg-naver-green/10 text-naver-green text-[11px] font-bold px-2 py-0.5 rounded border border-naver-green/30">
-                        RUNNING
-                    </span>
-                    <h1 class="text-lg font-bold text-slate-900">Flask Microservice Instance</h1>
-                </div>
-                <p class="text-slate-500 text-xs">Automated deployment via GitHub Actions & Render PaaS Pipeline</p>
-            </div>
+        <!-- 중앙 메인 피드 영역 (2열 차지) -->
+        <section class="md:col-span-2 space-y-6">
             
-            <div class="flex items-center gap-3">
-                <button onclick="checkHealth()" class="px-4 py-2 bg-naver-green hover:bg-naver-hover text-white text-xs font-bold rounded transition shadow-sm flex items-center gap-1.5">
-                    <i class="fa-solid fa-arrows-rotate"></i>
-                    Sync Instance
-                </button>
-            </div>
-        </div>
-
-        <!-- Metrics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white p-4 rounded-lg border border-naver-border shadow-sm">
-                <div class="text-slate-400 text-[11px] font-mono mb-1">SERVICE AVAILABILITY</div>
-                <div class="text-2xl font-extrabold text-slate-900 font-mono">99.9%</div>
-                <div class="text-[11px] text-naver-green font-semibold mt-1">Normal Operational</div>
-            </div>
-            <div class="bg-white p-4 rounded-lg border border-naver-border shadow-sm">
-                <div class="text-slate-400 text-[11px] font-mono mb-1">CONTAINER RUNTIME</div>
-                <div class="text-2xl font-extrabold text-slate-900 font-mono">Python 3.11</div>
-                <div class="text-[11px] text-slate-500 font-mono mt-1">WSGI / Gunicorn</div>
-            </div>
-            <div class="bg-white p-4 rounded-lg border border-naver-border shadow-sm">
-                <div class="text-slate-400 text-[11px] font-mono mb-1">REGION / ZONE</div>
-                <div class="text-2xl font-extrabold text-slate-900 font-mono">KR-1</div>
-                <div class="text-[11px] text-slate-500 mt-1">Seoul Multi-AZ</div>
-            </div>
-            <div class="bg-white p-4 rounded-lg border border-naver-border shadow-sm">
-                <div class="text-slate-400 text-[11px] font-mono mb-1">SSL CERTIFICATE</div>
-                <div class="text-2xl font-extrabold text-slate-900 font-mono">ACTIVE</div>
-                <div class="text-[11px] text-naver-green font-semibold mt-1">Auto-Renewed (HTTPS)</div>
-            </div>
-        </div>
-
-        <!-- Detail Grid (Console Logs & API Endpoint Table) -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <!-- Left 2 Cols: API & Route Table -->
-            <div class="lg:col-span-2 bg-white rounded-lg border border-naver-border shadow-sm overflow-hidden">
-                <div class="px-5 py-3.5 border-b border-naver-border bg-slate-50 flex items-center justify-between text-xs">
-                    <span class="font-bold text-slate-900">Active Routing Endpoints</span>
-                    <span class="text-slate-400 font-mono text-[11px]">Flask Application Map</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-slate-100 text-slate-500 border-b border-naver-border font-mono">
-                            <tr>
-                                <th class="p-3.5">METHOD</th>
-                                <th class="p-3.5">PATH</th>
-                                <th class="p-3.5">HANDLER</th>
-                                <th class="p-3.5">STATUS</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-naver-border font-mono text-slate-700">
-                            <tr>
-                                <td class="p-3.5 font-bold text-naver-green">GET</td>
-                                <td class="p-3.5 font-semibold">/</td>
-                                <td class="p-3.5 text-slate-500">home()</td>
-                                <td class="p-3.5"><span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">200 OK</span></td>
-                            </tr>
-                            <tr>
-                                <td class="p-3.5 font-bold text-naver-green">GET</td>
-                                <td class="p-3.5 font-semibold">/health</td>
-                                <td class="p-3.5 text-slate-500">health_check()</td>
-                                <td class="p-3.5"><span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">200 OK</span></td>
-                            </tr>
-                            <tr>
-                                <td class="p-3.5 font-bold text-blue-600">POST</td>
-                                <td class="p-3.5 font-semibold">/api/v1/telemetry</td>
-                                <td class="p-3.5 text-slate-500">receive_metrics()</td>
-                                <td class="p-3.5"><span class="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded font-bold">READY</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Right Col: System Event Log -->
-            <div class="bg-slate-900 rounded-lg p-4 font-mono text-xs text-slate-300 shadow-sm flex flex-col justify-between">
-                <div>
-                    <div class="text-slate-500 pb-2 mb-3 border-b border-slate-800 text-[11px] flex justify-between">
-                        <span>NAVER_CLOUD_LOG</span>
-                        <span class="text-naver-green">STREAMING</span>
+            <!-- 스토리 영역 -->
+            <div class="bg-black border border-zinc-800 rounded-xl p-4 flex items-center gap-4 overflow-x-auto scrollbar-hide">
+                <div class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer">
+                    <div class="w-14 h-14 rounded-full p-[2px] story-ring">
+                        <div class="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center font-bold text-xs text-pink-400 border-2 border-black">
+                            Flask
+                        </div>
                     </div>
-                    <div class="space-y-2 text-[11px] leading-relaxed">
-                        <p class="text-slate-500">[16:05:12] Init Gunicorn worker process.</p>
-                        <p class="text-slate-500">[16:05:13] Binding app instance to 0.0.0.0:10000.</p>
-                        <p class="text-naver-green">[16:05:14] Health Check Passed: 200 OK.</p>
-                        <p class="text-slate-400">[16:06:01] Telemetry metrics synced with Cloud Console.</p>
+                    <span class="text-[11px] text-zinc-400 truncate w-14 text-center">flask_app</span>
+                </div>
+
+                <div class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer">
+                    <div class="w-14 h-14 rounded-full p-[2px] story-ring">
+                        <div class="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center font-bold text-xs text-cyan-400 border-2 border-black">
+                            Render
+                        </div>
+                    </div>
+                    <span class="text-[11px] text-zinc-400 truncate w-14 text-center">render_cloud</span>
+                </div>
+
+                <div class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer">
+                    <div class="w-14 h-14 rounded-full p-[2px] story-ring">
+                        <div class="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center font-bold text-xs text-emerald-400 border-2 border-black">
+                            Git
+                        </div>
+                    </div>
+                    <span class="text-[11px] text-zinc-400 truncate w-14 text-center">github</span>
+                </div>
+            </div>
+
+            <!-- 피드 포스트 1 -->
+            <article class="border border-zinc-800 rounded-xl bg-black overflow-hidden">
+                <!-- 포스트 헤더 -->
+                <div class="p-3 flex items-center justify-between border-b border-zinc-900">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-full p-[1.5px] story-ring">
+                            <div class="w-full h-full bg-zinc-800 rounded-full flex items-center justify-center text-xs font-bold border border-black">
+                                DEV
+                            </div>
+                        </div>
+                        <span class="text-xs font-semibold">my_first_web_app</span>
+                        <span class="text-zinc-500 text-xs">• 1시간</span>
+                    </div>
+                    <i class="fa-solid fa-ellipsis text-zinc-400 cursor-pointer text-xs"></i>
+                </div>
+
+                <!-- 포스트 카드 스타일 콘텐츠 (이미지 대신 정갈한 이미지 카드) -->
+                <div class="bg-gradient-to-br from-zinc-900 to-black p-12 text-center flex flex-col items-center justify-center border-y border-zinc-900 min-h-[300px]">
+                    <div class="w-16 h-16 rounded-2xl bg-pink-500/10 text-pink-500 flex items-center justify-center text-3xl mb-4 border border-pink-500/20">
+                        <i class="fa-solid fa-rocket"></i>
+                    </div>
+                    <h2 class="text-xl font-bold tracking-tight mb-2">Flask Deploy Completed</h2>
+                    <p class="text-xs text-zinc-400 font-mono">https://my-first-web-9c9l.onrender.com</p>
+                </div>
+
+                <!-- 포스트 하단 버튼 & 댓글 -->
+                <div class="p-3 text-xs">
+                    <div class="flex items-center justify-between text-xl mb-2.5">
+                        <div class="flex items-center gap-4">
+                            <i id="likeBtn" onclick="toggleLike()" class="fa-regular fa-heart cursor-pointer hover:text-zinc-400 transition"></i>
+                            <i class="fa-regular fa-comment cursor-pointer hover:text-zinc-400 transition"></i>
+                            <i class="fa-regular fa-paper-plane cursor-pointer hover:text-zinc-400 transition"></i>
+                        </div>
+                        <i class="fa-regular fa-bookmark cursor-pointer hover:text-zinc-400 transition"></i>
+                    </div>
+
+                    <p class="font-semibold mb-1" id="likeCount">좋아요 128개</p>
+                    <p class="text-zinc-300">
+                        <span class="font-semibold text-white mr-1.5">my_first_web_app</span>
+                        Flask 백엔드와 Render 클라우드로 배포한 첫 번째 웹 프로젝트 ✨
+                    </p>
+                    <p class="text-zinc-500 text-[11px] mt-1 cursor-pointer">댓글 12개 모두 보기</p>
+                </div>
+            </article>
+
+        </section>
+
+        <!-- 우측 사이드바 (프로필 및 추천) -->
+        <aside class="hidden md:block space-y-4">
+            <!-- 내 프로필 -->
+            <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-full bg-zinc-800 flex items-center justify-center font-bold text-sm border border-zinc-700">
+                        WOONG
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-semibold text-white">woong_dev</span>
+                        <span class="text-zinc-500 text-[11px]">Developer Account</span>
                     </div>
                 </div>
-                <div class="mt-6 pt-3 border-t border-slate-800 text-[10px] text-slate-500 flex justify-between">
-                    <span>Engine: Flask</span>
-                    <span>Platform: Render</span>
+                <button class="text-blue-500 font-semibold text-[11px] hover:text-white transition">전환</button>
+            </div>
+
+            <!-- 회원님을 위한 추천 -->
+            <div class="pt-2">
+                <div class="flex items-center justify-between text-xs font-semibold mb-3">
+                    <span class="text-zinc-400">회원님을 위한 추천</span>
+                    <span class="text-white text-[11px] cursor-pointer">모두 보기</span>
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-mono">PY</div>
+                            <div class="flex flex-col">
+                                <span class="font-semibold">python_official</span>
+                                <span class="text-zinc-500 text-[10px]">인기 항목</span>
+                            </div>
+                        </div>
+                        <button class="text-blue-500 font-semibold text-[11px] hover:text-white">팔로우</button>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-mono">GIT</div>
+                            <div class="flex flex-col">
+                                <span class="font-semibold">github_dev</span>
+                                <span class="text-zinc-500 text-[10px]">회원님을 팔로우합니다</span>
+                            </div>
+                        </div>
+                        <button class="text-blue-500 font-semibold text-[11px] hover:text-white">팔로우</button>
+                    </div>
                 </div>
             </div>
 
-        </div>
+            <footer class="text-[11px] text-zinc-600 pt-4 leading-relaxed font-sans">
+                소개 • 도움말 • 홍보 센터 • API • 채용 정보 • 개인정보처리방침 • 약관
+                <p class="mt-3 text-zinc-700">© 2026 INSTAGRAM STYLE WEB APP</p>
+            </footer>
+        </aside>
 
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-white border-t border-naver-border py-4 text-center text-slate-500 text-xs font-mono">
-        <p>© NAVER Cloud & Enterprise Web Platform. All rights reserved.</p>
-    </footer>
-
     <script>
-        function checkHealth() {
-            alert('NAVER Cloud Console Status:\n\n- Container State: Healthy\n- Backend Engine: Flask 3.x\n- SSL Status: Active');
+        let liked = false;
+        function toggleLike() {
+            const btn = document.getElementById('likeBtn');
+            const count = document.getElementById('likeCount');
+            if (!liked) {
+                btn.className = "fa-solid fa-heart text-red-500 cursor-pointer transition";
+                count.innerText = "좋아요 129개";
+                liked = true;
+            } else {
+                btn.className = "fa-regular fa-heart cursor-pointer hover:text-zinc-400 transition";
+                count.innerText = "좋아요 128개";
+                liked = false;
+            }
         }
     </script>
 </body>

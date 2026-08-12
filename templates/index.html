@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NAVER Style Portal | Flask Web App</title>
+    <title>NAVER Cloud Platform | Developer Console</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -15,8 +15,9 @@
                         naver: {
                             green: '#03C75A',
                             hover: '#02b350',
-                            bg: '#f5f6f7',
-                            border: '#e4e8eb'
+                            navy: '#0B1A30',
+                            border: '#E3E7ED',
+                            bg: '#F8F9FA'
                         }
                     }
                 }
@@ -26,112 +27,144 @@
 </head>
 <body class="bg-naver-bg text-slate-800 font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-naver-green selection:text-white">
 
-    <!-- 상단 띠 영역 -->
-    <header class="bg-white border-b border-naver-border">
-        <div class="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between text-xs text-slate-600">
-            <div class="flex items-center gap-4">
-                <span class="font-bold text-slate-900 cursor-pointer hover:underline">네이버를 시작페이지로</span>
-                <span class="text-slate-300">|</span>
-                <span class="cursor-pointer hover:underline">쥬니버네이버</span>
-                <span class="cursor-pointer hover:underline">해피빈</span>
+    <!-- Header Navigation -->
+    <header class="bg-white border-b border-naver-border sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-8">
+                <!-- NAVER Cloud Style Logo -->
+                <div class="flex items-center gap-2 cursor-pointer select-none">
+                    <span class="text-naver-green font-black text-xl tracking-tighter">NAVER</span>
+                    <span class="text-slate-900 font-bold text-sm tracking-tight">Cloud Platform</span>
+                </div>
+                
+                <nav class="hidden md:flex items-center gap-6 font-semibold text-slate-600">
+                    <a href="#" class="text-naver-green font-bold border-b-2 border-naver-green py-4">Console</a>
+                    <a href="#" class="hover:text-slate-900 transition py-4">Products</a>
+                    <a href="#" class="hover:text-slate-900 transition py-4">Solutions</a>
+                    <a href="#" class="hover:text-slate-900 transition py-4">API Docs</a>
+                </nav>
             </div>
-            <div class="flex items-center gap-3 font-medium">
-                <a href="https://github.com/ChoiHwanwoong/my-first-web" target="_blank" class="hover:text-slate-900 flex items-center gap-1">
-                    <i class="fa-brands fa-github text-sm"></i> GitHub Repo
+
+            <div class="flex items-center gap-4 text-slate-600 font-medium">
+                <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-mono bg-slate-100 px-2.5 py-1 rounded border border-slate-200">
+                    <span class="w-2 h-2 rounded-full bg-naver-green"></span>
+                    KR-WEST-1 (Seoul)
+                </span>
+                <a href="https://github.com/ChoiHwanwoong/my-first-web" target="_blank" 
+                   class="hover:text-slate-900 flex items-center gap-1.5 bg-slate-900 text-white px-3 py-1.5 rounded font-mono text-[11px] transition">
+                    <i class="fa-brands fa-github"></i> GitHub
                 </a>
             </div>
         </div>
     </header>
 
-    <!-- 메인 로고 & 검색창 영역 -->
-    <main class="max-w-5xl mx-auto px-4 py-8 w-full flex-1 flex flex-col items-center">
+    <!-- Main Console Body -->
+    <main class="max-w-7xl mx-auto px-6 py-8 w-full flex-1">
         
-        <!-- 네이버 스타일 로고 -->
-        <div class="mb-6 flex items-center gap-1 cursor-pointer select-none">
-            <span class="text-naver-green font-black text-5xl tracking-tighter">NAVER</span>
-            <span class="bg-naver-green text-white text-[10px] font-bold px-1.5 py-0.5 rounded ml-1">DEV</span>
-        </div>
-
-        <!-- 네이버 특유의 초록 테두리 검색창 -->
-        <div class="w-full max-w-2xl bg-white border-2 border-naver-green rounded-full px-5 py-3 flex items-center shadow-sm hover:shadow-md transition mb-8">
-            <i class="fa-solid fa-search text-naver-green text-lg mr-3"></i>
-            <input type="text" id="searchInput" placeholder="검색어를 입력해 주세요 (예: Flask 배포, Render 서버)" 
-                   class="w-full outline-none text-sm text-slate-800 placeholder-slate-400 bg-transparent"
-                   onkeypress="if(event.key==='Enter') handleSearch()">
-            <button onclick="handleSearch()" class="bg-naver-green hover:bg-naver-hover text-white px-5 py-1.5 rounded-full text-xs font-bold transition ml-2">
-                검색
-            </button>
-        </div>
-
-        <!-- 네이버 메인 서비스 아이콘 탭 -->
-        <div class="w-full max-w-2xl grid grid-cols-5 sm:grid-cols-8 gap-3 text-center text-xs font-medium text-slate-700 mb-10">
-            <div class="p-2.5 bg-white rounded-xl border border-naver-border hover:border-naver-green transition cursor-pointer shadow-sm">
-                <i class="fa-solid fa-envelope text-naver-green text-xl mb-1.5 block"></i> 메일
-            </div>
-            <div class="p-2.5 bg-white rounded-xl border border-naver-border hover:border-naver-green transition cursor-pointer shadow-sm">
-                <i class="fa-solid fa-newspaper text-naver-green text-xl mb-1.5 block"></i> 뉴스
-            </div>
-            <div class="p-2.5 bg-white rounded-xl border border-naver-border hover:border-naver-green transition cursor-pointer shadow-sm">
-                <i class="fa-solid fa-store text-naver-green text-xl mb-1.5 block"></i> 쇼핑
-            </div>
-            <div class="p-2.5 bg-white rounded-xl border border-naver-border hover:border-naver-green transition cursor-pointer shadow-sm">
-                <i class="fa-solid fa-comments text-naver-green text-xl mb-1.5 block"></i> 카페
-            </div>
-            <div class="p-2.5 bg-white rounded-xl border border-naver-border hover:border-naver-green transition cursor-pointer shadow-sm">
-                <i class="fa-solid fa-pen-to-square text-naver-green text-xl mb-1.5 block"></i> 블로그
-            </div>
-            <div class="p-2.5 bg-white rounded-xl border border-naver-border hover:border-naver-green transition cursor-pointer shadow-sm hidden sm:block">
-                <i class="fa-solid fa-map-location-dot text-naver-green text-xl mb-1.5 block"></i> 지도
-            </div>
-            <div class="p-2.5 bg-white rounded-xl border border-naver-border hover:border-naver-green transition cursor-pointer shadow-sm hidden sm:block">
-                <i class="fa-solid fa-chart-line text-naver-green text-xl mb-1.5 block"></i> 증권
-            </div>
-            <div class="p-2.5 bg-white rounded-xl border border-naver-border hover:border-naver-green transition cursor-pointer shadow-sm hidden sm:block">
-                <i class="fa-solid fa-cloud text-naver-green text-xl mb-1.5 block"></i> MYBOX
-            </div>
-        </div>
-
-        <!-- 하단 컨텐츠 레이아웃 (뉴스스탠드 / 프로필 카드 스타일) -->
-        <div class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-3 gap-5 text-left">
-            
-            <!-- 뉴스/알림 카드 (2열 차지) -->
-            <div class="md:col-span-2 bg-white p-5 rounded-xl border border-naver-border shadow-sm">
-                <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 text-xs">
-                    <span class="font-bold text-slate-900 flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-naver-green"></span>
-                        네이버 뉴스스탠드 스타일 알림
+        <!-- Top Status Bar -->
+        <div class="bg-white border border-naver-border rounded-lg p-6 mb-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="bg-naver-green/10 text-naver-green text-[11px] font-bold px-2 py-0.5 rounded border border-naver-green/30">
+                        RUNNING
                     </span>
-                    <span class="text-slate-400 font-mono">Render Cloud Status</span>
+                    <h1 class="text-lg font-bold text-slate-900">Flask Microservice Instance</h1>
                 </div>
-                <ul class="space-y-2.5 text-xs text-slate-600">
-                    <li class="flex items-center justify-between hover:text-naver-green cursor-pointer">
-                        <span class="truncate">🎉 [안내] Flask 기반 개발 포털 사이트가 정상 오픈되었습니다.</span>
-                        <span class="text-slate-400 font-mono text-[11px] ml-2">오늘</span>
-                    </li>
-                    <li class="flex items-center justify-between hover:text-naver-green cursor-pointer">
-                        <span class="truncate">⚡ [기술] GitHub Webhook 자동 연동 배포 완료</span>
-                        <span class="text-slate-400 font-mono text-[11px] ml-2">방금</span>
-                    </li>
-                    <li class="flex items-center justify-between hover:text-naver-green cursor-pointer">
-                        <span class="truncate">🌐 [서버] Render PaaS 환경 정상 작동 중</span>
-                        <span class="text-slate-400 font-mono text-[11px] ml-2">정상</span>
-                    </li>
-                </ul>
+                <p class="text-slate-500 text-xs">Automated deployment via GitHub Actions & Render PaaS Pipeline</p>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button onclick="checkHealth()" class="px-4 py-2 bg-naver-green hover:bg-naver-hover text-white text-xs font-bold rounded transition shadow-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                    Sync Instance
+                </button>
+            </div>
+        </div>
+
+        <!-- Metrics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-lg border border-naver-border shadow-sm">
+                <div class="text-slate-400 text-[11px] font-mono mb-1">SERVICE AVAILABILITY</div>
+                <div class="text-2xl font-extrabold text-slate-900 font-mono">99.9%</div>
+                <div class="text-[11px] text-naver-green font-semibold mt-1">Normal Operational</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg border border-naver-border shadow-sm">
+                <div class="text-slate-400 text-[11px] font-mono mb-1">CONTAINER RUNTIME</div>
+                <div class="text-2xl font-extrabold text-slate-900 font-mono">Python 3.11</div>
+                <div class="text-[11px] text-slate-500 font-mono mt-1">WSGI / Gunicorn</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg border border-naver-border shadow-sm">
+                <div class="text-slate-400 text-[11px] font-mono mb-1">REGION / ZONE</div>
+                <div class="text-2xl font-extrabold text-slate-900 font-mono">KR-1</div>
+                <div class="text-[11px] text-slate-500 mt-1">Seoul Multi-AZ</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg border border-naver-border shadow-sm">
+                <div class="text-slate-400 text-[11px] font-mono mb-1">SSL CERTIFICATE</div>
+                <div class="text-2xl font-extrabold text-slate-900 font-mono">ACTIVE</div>
+                <div class="text-[11px] text-naver-green font-semibold mt-1">Auto-Renewed (HTTPS)</div>
+            </div>
+        </div>
+
+        <!-- Detail Grid (Console Logs & API Endpoint Table) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Left 2 Cols: API & Route Table -->
+            <div class="lg:col-span-2 bg-white rounded-lg border border-naver-border shadow-sm overflow-hidden">
+                <div class="px-5 py-3.5 border-b border-naver-border bg-slate-50 flex items-center justify-between text-xs">
+                    <span class="font-bold text-slate-900">Active Routing Endpoints</span>
+                    <span class="text-slate-400 font-mono text-[11px]">Flask Application Map</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-100 text-slate-500 border-b border-naver-border font-mono">
+                            <tr>
+                                <th class="p-3.5">METHOD</th>
+                                <th class="p-3.5">PATH</th>
+                                <th class="p-3.5">HANDLER</th>
+                                <th class="p-3.5">STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-naver-border font-mono text-slate-700">
+                            <tr>
+                                <td class="p-3.5 font-bold text-naver-green">GET</td>
+                                <td class="p-3.5 font-semibold">/</td>
+                                <td class="p-3.5 text-slate-500">home()</td>
+                                <td class="p-3.5"><span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">200 OK</span></td>
+                            </tr>
+                            <tr>
+                                <td class="p-3.5 font-bold text-naver-green">GET</td>
+                                <td class="p-3.5 font-semibold">/health</td>
+                                <td class="p-3.5 text-slate-500">health_check()</td>
+                                <td class="p-3.5"><span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">200 OK</span></td>
+                            </tr>
+                            <tr>
+                                <td class="p-3.5 font-bold text-blue-600">POST</td>
+                                <td class="p-3.5 font-semibold">/api/v1/telemetry</td>
+                                <td class="p-3.5 text-slate-500">receive_metrics()</td>
+                                <td class="p-3.5"><span class="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded font-bold">READY</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <!-- 네이버 로그인 카드 스타일 -->
-            <div class="bg-white p-5 rounded-xl border border-naver-border shadow-sm flex flex-col justify-between">
+            <!-- Right Col: System Event Log -->
+            <div class="bg-slate-900 rounded-lg p-4 font-mono text-xs text-slate-300 shadow-sm flex flex-col justify-between">
                 <div>
-                    <p class="text-xs text-slate-500 mb-3">네이버를 더 안전하고 편리하게 이용하세요.</p>
-                    <button onclick="alert('Flask 웹 서버 로그인 기능이 정상 동작합니다!')" 
-                            class="w-full bg-naver-green hover:bg-naver-hover text-white font-bold py-2.5 rounded text-xs transition shadow-sm flex items-center justify-center gap-1">
-                        <i class="fa-solid fa-lock text-[11px]"></i> NAVER 로그인
-                    </button>
+                    <div class="text-slate-500 pb-2 mb-3 border-b border-slate-800 text-[11px] flex justify-between">
+                        <span>NAVER_CLOUD_LOG</span>
+                        <span class="text-naver-green">STREAMING</span>
+                    </div>
+                    <div class="space-y-2 text-[11px] leading-relaxed">
+                        <p class="text-slate-500">[16:05:12] Init Gunicorn worker process.</p>
+                        <p class="text-slate-500">[16:05:13] Binding app instance to 0.0.0.0:10000.</p>
+                        <p class="text-naver-green">[16:05:14] Health Check Passed: 200 OK.</p>
+                        <p class="text-slate-400">[16:06:01] Telemetry metrics synced with Cloud Console.</p>
+                    </div>
                 </div>
-                <div class="flex items-center justify-between text-[11px] text-slate-400 pt-3 border-t border-slate-100 mt-4">
-                    <span class="hover:underline cursor-pointer">아이디 찾기</span>
-                    <span class="hover:underline cursor-pointer">비밀번호 찾기</span>
-                    <span class="hover:underline cursor-pointer font-bold text-slate-600">회원가입</span>
+                <div class="mt-6 pt-3 border-t border-slate-800 text-[10px] text-slate-500 flex justify-between">
+                    <span>Engine: Flask</span>
+                    <span>Platform: Render</span>
                 </div>
             </div>
 
@@ -139,25 +172,14 @@
 
     </main>
 
-    <!-- 푸터 -->
-    <footer class="bg-white border-t border-naver-border py-6 text-center text-slate-400 text-xs">
-        <div class="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <div>
-                <span class="font-bold text-slate-600">NAVER Style Portal</span> | Powered by Flask & Render
-            </div>
-            <p>© NAVER Corp. & Flask Developer. All rights reserved.</p>
-        </div>
+    <!-- Footer -->
+    <footer class="bg-white border-t border-naver-border py-4 text-center text-slate-500 text-xs font-mono">
+        <p>© NAVER Cloud & Enterprise Web Platform. All rights reserved.</p>
     </footer>
 
     <script>
-        function handleSearch() {
-            const query = document.getElementById('searchInput').value;
-            if (query.trim() === '') {
-                alert('검색어를 입력해 주세요!');
-                return;
-            }
-            // 실제 네이버 검색 페이지로 연결
-            window.open(`https://search.naver.com/search.naver?query=${encodeURIComponent(query)}`, '_blank');
+        function checkHealth() {
+            alert('NAVER Cloud Console Status:\n\n- Container State: Healthy\n- Backend Engine: Flask 3.x\n- SSL Status: Active');
         }
     </script>
 </body>

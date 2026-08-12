@@ -14,189 +14,317 @@
         }
     </style>
 </head>
-<body class="bg-black text-white font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-pink-500 selection:text-white">
+<body class="bg-white text-slate-900 font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-pink-500 selection:text-white">
 
-    <!-- 상단 헤더 / 좌측 네비바 (인스타그램 웹 스타일) -->
-    <header class="border-b border-zinc-800 bg-black sticky top-0 z-50">
+    <!-- 상단 헤더 -->
+    <header class="border-b border-slate-200 bg-white sticky top-0 z-50">
         <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-            <!-- 인스타그램 로고 폰트 느낌 -->
-            <div class="text-xl font-bold tracking-tight italic cursor-pointer font-serif">
+            <div class="text-xl font-bold tracking-tight italic cursor-pointer font-serif text-slate-900">
                 Instagram
             </div>
 
             <!-- 검색창 -->
-            <div class="hidden sm:flex items-center bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs w-64">
-                <i class="fa-solid fa-magnifying-glass text-zinc-500 mr-2"></i>
-                <input type="text" placeholder="검색" class="bg-transparent outline-none w-full text-zinc-200 placeholder-zinc-500">
+            <div class="hidden sm:flex items-center bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 text-xs w-64">
+                <i class="fa-solid fa-magnifying-glass text-slate-400 mr-2"></i>
+                <input type="text" placeholder="검색" class="bg-transparent outline-none w-full text-slate-800 placeholder-slate-400">
             </div>
 
-            <!-- 우측 아이콘 메뉴 -->
-            <div class="flex items-center gap-5 text-xl">
-                <i class="fa-solid fa-house cursor-pointer hover:text-zinc-400 transition"></i>
-                <i class="fa-paper-plane fa-regular cursor-pointer hover:text-zinc-400 transition"></i>
-                <i class="fa-square-plus fa-regular cursor-pointer hover:text-zinc-400 transition"></i>
-                <i class="fa-compass fa-regular cursor-pointer hover:text-zinc-400 transition"></i>
-                <i class="fa-heart fa-regular cursor-pointer hover:text-zinc-400 transition"></i>
-                <a href="https://github.com/ChoiHwanwoong/my-first-web" target="_blank" class="text-xs bg-zinc-800 hover:bg-zinc-700 px-2.5 py-1 rounded font-mono transition">
+            <!-- 우측 메뉴 -->
+            <div class="flex items-center gap-5 text-xl text-slate-800">
+                <i class="fa-solid fa-house cursor-pointer hover:text-slate-500 transition"></i>
+                <i class="fa-paper-plane fa-regular cursor-pointer hover:text-slate-500 transition"></i>
+                <i class="fa-square-plus fa-regular cursor-pointer hover:text-slate-500 transition"></i>
+                <i class="fa-compass fa-regular cursor-pointer hover:text-slate-500 transition"></i>
+                <i class="fa-heart fa-regular cursor-pointer hover:text-slate-500 transition"></i>
+                <a href="https://github.com/ChoiHwanwoong/my-first-web" target="_blank" class="text-xs bg-slate-100 hover:bg-slate-200 border border-slate-200 px-2.5 py-1 rounded font-mono transition text-slate-700">
                     Git
                 </a>
             </div>
         </div>
     </header>
 
-    <!-- 메인 레이아웃 (피드 + 우측 프로필) -->
+    <!-- 메인 레이아웃 -->
     <main class="max-w-4xl mx-auto px-4 py-6 w-full flex-1 grid grid-cols-1 md:grid-cols-3 gap-8">
         
-        <!-- 중앙 메인 피드 영역 (2열 차지) -->
+        <!-- 중앙 피드 영역 (2열) -->
         <section class="md:col-span-2 space-y-6">
             
-            <!-- 스토리 영역 -->
-            <div class="bg-black border border-zinc-800 rounded-xl p-4 flex items-center gap-4 overflow-x-auto scrollbar-hide">
+            <!-- 1. 풍성해진 스토리 바 -->
+            <div class="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4 overflow-x-auto scrollbar-hide shadow-sm">
                 <div class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer">
                     <div class="w-14 h-14 rounded-full p-[2px] story-ring">
-                        <div class="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center font-bold text-xs text-pink-400 border-2 border-black">
+                        <div class="w-full h-full rounded-full bg-slate-900 flex items-center justify-center font-bold text-xs text-pink-400 border-2 border-white">
                             Flask
                         </div>
                     </div>
-                    <span class="text-[11px] text-zinc-400 truncate w-14 text-center">flask_app</span>
+                    <span class="text-[11px] text-slate-600 truncate w-14 text-center">flask_app</span>
                 </div>
 
                 <div class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer">
                     <div class="w-14 h-14 rounded-full p-[2px] story-ring">
-                        <div class="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center font-bold text-xs text-cyan-400 border-2 border-black">
+                        <div class="w-full h-full rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs text-white border-2 border-white">
                             Render
                         </div>
                     </div>
-                    <span class="text-[11px] text-zinc-400 truncate w-14 text-center">render_cloud</span>
+                    <span class="text-[11px] text-slate-600 truncate w-14 text-center">render_cloud</span>
                 </div>
 
                 <div class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer">
                     <div class="w-14 h-14 rounded-full p-[2px] story-ring">
-                        <div class="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center font-bold text-xs text-emerald-400 border-2 border-black">
+                        <div class="w-full h-full rounded-full bg-emerald-600 flex items-center justify-center font-bold text-xs text-white border-2 border-white">
                             Git
                         </div>
                     </div>
-                    <span class="text-[11px] text-zinc-400 truncate w-14 text-center">github</span>
+                    <span class="text-[11px] text-slate-600 truncate w-14 text-center">github</span>
+                </div>
+
+                <div class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer">
+                    <div class="w-14 h-14 rounded-full p-[2px] story-ring">
+                        <div class="w-full h-full rounded-full bg-purple-600 flex items-center justify-center font-bold text-xs text-white border-2 border-white">
+                            Python
+                        </div>
+                    </div>
+                    <span class="text-[11px] text-slate-600 truncate w-14 text-center">python_dev</span>
+                </div>
+
+                <div class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer">
+                    <div class="w-14 h-14 rounded-full p-[2px] story-ring">
+                        <div class="w-full h-full rounded-full bg-cyan-600 flex items-center justify-center font-bold text-xs text-white border-2 border-white">
+                            Tailwind
+                        </div>
+                    </div>
+                    <span class="text-[11px] text-slate-600 truncate w-14 text-center">tailwind_ui</span>
+                </div>
+
+                <div class="flex flex-col items-center gap-1 min-w-[64px] cursor-pointer">
+                    <div class="w-14 h-14 rounded-full p-[2px] bg-slate-300">
+                        <div class="w-full h-full rounded-full bg-slate-100 flex items-center justify-center font-bold text-xs text-slate-500 border-2 border-white">
+                            Setup
+                        </div>
+                    </div>
+                    <span class="text-[11px] text-slate-400 truncate w-14 text-center">config</span>
                 </div>
             </div>
 
-            <!-- 피드 포스트 1 -->
-            <article class="border border-zinc-800 rounded-xl bg-black overflow-hidden">
-                <!-- 포스트 헤더 -->
-                <div class="p-3 flex items-center justify-between border-b border-zinc-900">
+            <!-- 2. 피드 포스트 1: 웹 프로젝트 배포 성공 -->
+            <article class="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm">
+                <div class="p-3 flex items-center justify-between border-b border-slate-100">
                     <div class="flex items-center gap-2.5">
                         <div class="w-8 h-8 rounded-full p-[1.5px] story-ring">
-                            <div class="w-full h-full bg-zinc-800 rounded-full flex items-center justify-center text-xs font-bold border border-black">
+                            <div class="w-full h-full bg-slate-900 rounded-full flex items-center justify-center text-[10px] font-bold text-white border border-white">
                                 DEV
                             </div>
                         </div>
-                        <span class="text-xs font-semibold">my_first_web_app</span>
-                        <span class="text-zinc-500 text-xs">• 1시간</span>
+                        <span class="text-xs font-semibold text-slate-900">my_first_web_app</span>
+                        <span class="text-slate-400 text-xs">• 1시간</span>
                     </div>
-                    <i class="fa-solid fa-ellipsis text-zinc-400 cursor-pointer text-xs"></i>
+                    <i class="fa-solid fa-ellipsis text-slate-400 cursor-pointer text-xs"></i>
                 </div>
 
-                <!-- 포스트 카드 스타일 콘텐츠 (이미지 대신 정갈한 이미지 카드) -->
-                <div class="bg-gradient-to-br from-zinc-900 to-black p-12 text-center flex flex-col items-center justify-center border-y border-zinc-900 min-h-[300px]">
-                    <div class="w-16 h-16 rounded-2xl bg-pink-500/10 text-pink-500 flex items-center justify-center text-3xl mb-4 border border-pink-500/20">
+                <!-- 비주얼 카드로 꾸민 이미지 영역 -->
+                <div class="bg-gradient-to-br from-slate-50 to-slate-100 p-10 text-center flex flex-col items-center justify-center border-y border-slate-100 min-h-[280px]">
+                    <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-3xl mb-3 border border-indigo-100 shadow-sm">
                         <i class="fa-solid fa-rocket"></i>
                     </div>
-                    <h2 class="text-xl font-bold tracking-tight mb-2">Flask Deploy Completed</h2>
-                    <p class="text-xs text-zinc-400 font-mono">https://my-first-web-9c9l.onrender.com</p>
+                    <h2 class="text-lg font-bold text-slate-800 tracking-tight mb-1">Flask & Render Deploy</h2>
+                    <p class="text-xs text-slate-500 font-mono">https://my-first-web-9c9l.onrender.com</p>
                 </div>
 
-                <!-- 포스트 하단 버튼 & 댓글 -->
                 <div class="p-3 text-xs">
-                    <div class="flex items-center justify-between text-xl mb-2.5">
+                    <div class="flex items-center justify-between text-xl mb-2.5 text-slate-800">
                         <div class="flex items-center gap-4">
-                            <i id="likeBtn" onclick="toggleLike()" class="fa-regular fa-heart cursor-pointer hover:text-zinc-400 transition"></i>
-                            <i class="fa-regular fa-comment cursor-pointer hover:text-zinc-400 transition"></i>
-                            <i class="fa-regular fa-paper-plane cursor-pointer hover:text-zinc-400 transition"></i>
+                            <i id="likeBtn1" onclick="toggleLike(1)" class="fa-regular fa-heart cursor-pointer hover:text-slate-400 transition"></i>
+                            <i class="fa-regular fa-comment cursor-pointer hover:text-slate-400 transition"></i>
+                            <i class="fa-regular fa-paper-plane cursor-pointer hover:text-slate-400 transition"></i>
                         </div>
-                        <i class="fa-regular fa-bookmark cursor-pointer hover:text-zinc-400 transition"></i>
+                        <i class="fa-regular fa-bookmark cursor-pointer hover:text-slate-400 transition"></i>
                     </div>
 
-                    <p class="font-semibold mb-1" id="likeCount">좋아요 128개</p>
-                    <p class="text-zinc-300">
-                        <span class="font-semibold text-white mr-1.5">my_first_web_app</span>
-                        Flask 백엔드와 Render 클라우드로 배포한 첫 번째 웹 프로젝트 ✨
+                    <p class="font-semibold mb-1 text-slate-900" id="likeCount1">좋아요 128개</p>
+                    <p class="text-slate-700 leading-relaxed">
+                        <span class="font-semibold text-slate-900 mr-1.5">my_first_web_app</span>
+                        Flask 백엔드와 Render 클라우드를 연동하여 구축한 웹 프로젝트입니다. 라이트 모드 디자인 적용 완! ✨
                     </p>
-                    <p class="text-zinc-500 text-[11px] mt-1 cursor-pointer">댓글 12개 모두 보기</p>
+                    <p class="text-slate-400 text-[11px] mt-2 cursor-pointer">댓글 24개 모두 보기</p>
+                    <div class="mt-2 text-[11px] text-slate-500 space-y-1">
+                        <p><span class="font-semibold text-slate-800">dev_king</span> 깔끔하고 이쁘네요 👍</p>
+                        <p><span class="font-semibold text-slate-800">python_fan</span> Flask 배포 성공 축하드립니다!</p>
+                    </div>
+                </div>
+            </article>
+
+            <!-- 3. 피드 포스트 2: 코드 파이프라인 소개 -->
+            <article class="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm">
+                <div class="p-3 flex items-center justify-between border-b border-slate-100">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-full p-[1.5px] story-ring">
+                            <div class="w-full h-full bg-blue-600 rounded-full flex items-center justify-center text-[10px] font-bold text-white border border-white">
+                                GIT
+                            </div>
+                        </div>
+                        <span class="text-xs font-semibold text-slate-900">github_pipeline</span>
+                        <span class="text-slate-400 text-xs">• 3시간</span>
+                    </div>
+                    <i class="fa-solid fa-ellipsis text-slate-400 cursor-pointer text-xs"></i>
+                </div>
+
+                <div class="bg-slate-900 p-8 text-left border-y border-slate-800 font-mono text-xs text-emerald-400 leading-relaxed min-h-[220px] flex flex-col justify-center">
+                    <p class="text-slate-500"># Git Commit Pipeline</p>
+                    <p>$ git add .</p>
+                    <p>$ git commit -m "Update light mode UI"</p>
+                    <p>$ git push origin main</p>
+                    <p class="text-blue-400 mt-2">➔ Auto-Deploying on Render Cloud... [Done]</p>
+                </div>
+
+                <div class="p-3 text-xs">
+                    <div class="flex items-center justify-between text-xl mb-2.5 text-slate-800">
+                        <div class="flex items-center gap-4">
+                            <i id="likeBtn2" onclick="toggleLike(2)" class="fa-regular fa-heart cursor-pointer hover:text-slate-400 transition"></i>
+                            <i class="fa-regular fa-comment cursor-pointer hover:text-slate-400 transition"></i>
+                            <i class="fa-regular fa-paper-plane cursor-pointer hover:text-slate-400 transition"></i>
+                        </div>
+                        <i class="fa-regular fa-bookmark cursor-pointer hover:text-slate-400 transition"></i>
+                    </div>
+
+                    <p class="font-semibold mb-1 text-slate-900" id="likeCount2">좋아요 85개</p>
+                    <p class="text-slate-700 leading-relaxed">
+                        <span class="font-semibold text-slate-900 mr-1.5">github_pipeline</span>
+                        Git 명령어 3줄만 입력하면 자동으로 깃허브를 거쳐 서버로 반영됩니다. 🚀
+                    </p>
+                </div>
+            </article>
+
+            <!-- 4. 피드 포스트 3: 시스템 상태 체크 -->
+            <article class="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm">
+                <div class="p-3 flex items-center justify-between border-b border-slate-100">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-[10px] font-bold text-white">
+                            SYS
+                        </div>
+                        <span class="text-xs font-semibold text-slate-900">system_health</span>
+                        <span class="text-slate-400 text-xs">• 5시간</span>
+                    </div>
+                    <i class="fa-solid fa-ellipsis text-slate-400 cursor-pointer text-xs"></i>
+                </div>
+
+                <div class="bg-gradient-to-r from-emerald-50 to-teal-50 p-8 text-center flex flex-col items-center justify-center border-y border-slate-100">
+                    <div class="flex items-center gap-2 text-emerald-600 font-bold text-base mb-1">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Server Status: Healthy
+                    </div>
+                    <p class="text-xs text-slate-500">All microservices running at 100% capacity</p>
+                </div>
+
+                <div class="p-3 text-xs">
+                    <div class="flex items-center justify-between text-xl mb-2.5 text-slate-800">
+                        <div class="flex items-center gap-4">
+                            <i id="likeBtn3" onclick="toggleLike(3)" class="fa-regular fa-heart cursor-pointer hover:text-slate-400 transition"></i>
+                            <i class="fa-regular fa-comment cursor-pointer hover:text-slate-400 transition"></i>
+                            <i class="fa-regular fa-paper-plane cursor-pointer hover:text-slate-400 transition"></i>
+                        </div>
+                        <i class="fa-regular fa-bookmark cursor-pointer hover:text-slate-400 transition"></i>
+                    </div>
+
+                    <p class="font-semibold mb-1 text-slate-900" id="likeCount3">좋아요 210개</p>
+                    <p class="text-slate-700">
+                        <span class="font-semibold text-slate-900 mr-1.5">system_health</span>
+                        현재 서버는 지연 없이 최적의 상태로 작동 중입니다.
+                    </p>
                 </div>
             </article>
 
         </section>
 
-        <!-- 우측 사이드바 (프로필 및 추천) -->
-        <aside class="hidden md:block space-y-4">
+        <!-- 우측 사이드바 -->
+        <aside class="hidden md:block space-y-6">
+            
             <!-- 내 프로필 -->
-            <div class="flex items-center justify-between text-xs">
+            <div class="flex items-center justify-between text-xs bg-white p-3 border border-slate-200 rounded-xl shadow-sm">
                 <div class="flex items-center gap-3">
-                    <div class="w-11 h-11 rounded-full bg-zinc-800 flex items-center justify-center font-bold text-sm border border-zinc-700">
+                    <div class="w-11 h-11 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs">
                         WOONG
                     </div>
                     <div class="flex flex-col">
-                        <span class="font-semibold text-white">woong_dev</span>
-                        <span class="text-zinc-500 text-[11px]">Developer Account</span>
+                        <span class="font-semibold text-slate-900">woong_dev</span>
+                        <span class="text-slate-500 text-[11px]">Developer Account</span>
                     </div>
                 </div>
-                <button class="text-blue-500 font-semibold text-[11px] hover:text-white transition">전환</button>
+                <button class="text-blue-600 font-semibold text-[11px] hover:text-slate-900 transition">전환</button>
             </div>
 
-            <!-- 회원님을 위한 추천 -->
-            <div class="pt-2">
+            <!-- 회원님을 위한 추천 목록 -->
+            <div class="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                 <div class="flex items-center justify-between text-xs font-semibold mb-3">
-                    <span class="text-zinc-400">회원님을 위한 추천</span>
-                    <span class="text-white text-[11px] cursor-pointer">모두 보기</span>
+                    <span class="text-slate-500">회원님을 위한 추천</span>
+                    <span class="text-slate-900 text-[11px] cursor-pointer hover:underline">모두 보기</span>
                 </div>
 
-                <div class="space-y-3 text-xs">
+                <div class="space-y-3.5 text-xs">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
-                            <div class="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-mono">PY</div>
+                            <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-mono font-bold text-slate-700">PY</div>
                             <div class="flex flex-col">
-                                <span class="font-semibold">python_official</span>
-                                <span class="text-zinc-500 text-[10px]">인기 항목</span>
+                                <span class="font-semibold text-slate-800">python_official</span>
+                                <span class="text-slate-400 text-[10px]">인기 항목</span>
                             </div>
                         </div>
-                        <button class="text-blue-500 font-semibold text-[11px] hover:text-white">팔로우</button>
+                        <button class="text-blue-500 font-semibold text-[11px] hover:text-blue-700">팔로우</button>
                     </div>
 
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
-                            <div class="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-mono">GIT</div>
+                            <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-mono font-bold text-slate-700">GIT</div>
                             <div class="flex flex-col">
-                                <span class="font-semibold">github_dev</span>
-                                <span class="text-zinc-500 text-[10px]">회원님을 팔로우합니다</span>
+                                <span class="font-semibold text-slate-800">github_dev</span>
+                                <span class="text-slate-400 text-[10px]">회원님을 팔로우합니다</span>
                             </div>
                         </div>
-                        <button class="text-blue-500 font-semibold text-[11px] hover:text-white">팔로우</button>
+                        <button class="text-blue-500 font-semibold text-[11px] hover:text-blue-700">팔로우</button>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-mono font-bold text-slate-700">RND</div>
+                            <div class="flex flex-col">
+                                <span class="font-semibold text-slate-800">render_cloud</span>
+                                <span class="text-slate-400 text-[10px]">새로운 기능 이용 가능</span>
+                            </div>
+                        </div>
+                        <button class="text-blue-500 font-semibold text-[11px] hover:text-blue-700">팔로우</button>
                     </div>
                 </div>
             </div>
 
-            <footer class="text-[11px] text-zinc-600 pt-4 leading-relaxed font-sans">
+            <!-- 하단 정보 -->
+            <footer class="text-[11px] text-slate-400 leading-relaxed font-sans px-1">
                 소개 • 도움말 • 홍보 센터 • API • 채용 정보 • 개인정보처리방침 • 약관
-                <p class="mt-3 text-zinc-700">© 2026 INSTAGRAM STYLE WEB APP</p>
+                <p class="mt-3 text-slate-500">© 2026 INSTAGRAM STYLE LIGHT APP</p>
             </footer>
         </aside>
 
     </main>
 
     <script>
-        let liked = false;
-        function toggleLike() {
-            const btn = document.getElementById('likeBtn');
-            const count = document.getElementById('likeCount');
-            if (!liked) {
+        const likes = {
+            1: { count: 128, state: false },
+            2: { count: 85, state: false },
+            3: { count: 210, state: false }
+        };
+
+        function toggleLike(id) {
+            const btn = document.getElementById(`likeBtn${id}`);
+            const count = document.getElementById(`likeCount${id}`);
+            
+            if (!likes[id].state) {
                 btn.className = "fa-solid fa-heart text-red-500 cursor-pointer transition";
-                count.innerText = "좋아요 129개";
-                liked = true;
+                likes[id].count += 1;
+                likes[id].state = true;
             } else {
-                btn.className = "fa-regular fa-heart cursor-pointer hover:text-zinc-400 transition";
-                count.innerText = "좋아요 128개";
-                liked = false;
+                btn.className = "fa-regular fa-heart cursor-pointer hover:text-slate-400 transition";
+                likes[id].count -= 1;
+                likes[id].state = false;
             }
+            count.innerText = `좋아요 ${likes[id].count}개`;
         }
     </script>
 </body>

@@ -16,7 +16,6 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # 1. 사용자 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,7 +26,6 @@ def init_db():
         )
     ''')
     
-    # 2. 게시글 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS posts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,7 +38,6 @@ def init_db():
         )
     ''')
 
-    # 3. 댓글 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,7 +48,6 @@ def init_db():
         )
     ''')
 
-    # 4. 좋아요 기록 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS post_likes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,7 +57,6 @@ def init_db():
         )
     ''')
 
-    # 5. 스토리 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS stories (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,7 +68,6 @@ def init_db():
         )
     ''')
 
-    # 6. 스토리 읽음 기록 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS story_views (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -181,18 +175,69 @@ def upload_file():
         image_url = f"/static/uploads/{save_filename}"
         return jsonify({'status': 'success', 'image_url': image_url})
 
-# --- 📸 Story APIs (24시간 자동 만료 & 읽음 처리 반영) ---
+# --- 🤖 추천 알고리즘 API ---
+@app.route('/api/recommendations', methods=['GET'])
+def get_recommendations():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    current_user = session.get('username')
+    recommendations = []
+
+    if current_user:
+        # 1. 협업 필터링: 내가 좋아요 누른 글에 함께 좋아요 누른 유저 탐색
+        query = '''
+            SELECT pl2.username, COUNT(*) as common_likes
+            FROM post_likes pl1
+            JOIN post_likes pl2 ON pl1.post_id = pl2.post_id
+            WHERE pl1.username = ? AND pl2.username != ?
+            GROUP BY pl2.username
+            ORDER BY common_likes DESC
+            LIMIT 3
+        '''
+        cursor.execute(query, (current_user, current_user))
+        similar_users = cursor.fetchall()
+
+        for u in similar_users:
+            recommendations.append({
+                'username': u[0],
+                'reason': f"{current_user}님과 취향이 비슷함"
+            })
+
+    # 추천수가 부족할 경우 전체 유저 중 활발한 유저 추천
+    if len(recommendations) < 3:
+        exclude_users = [current_user] if current_user else []
+        exclude_users.extend([r['username'] for r in recommendations])
+        
+        placeholders = ', '.join(['?'] * len(exclude_users)) if exclude_users else "''"
+        query_general = f'''
+            SELECT username, name FROM users 
+            WHERE username NOT IN ({placeholders})
+            LIMIT ?
+        '''
+        params = list(exclude_users) + [3 - len(recommendations)]
+        cursor.execute(query_general, params)
+        general_users = cursor.fetchall()
+
+        for u in general_users:
+            recommendations.append({
+                'username': u[0],
+                'reason': 'Woongstagram 추천 회원'
+            })
+
+    conn.close()
+    return jsonify({'status': 'success', 'recommendations': recommendations})
+
+# --- 📸 Story APIs ---
 @app.route('/api/stories', methods=['GET'])
 def get_stories():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # 1. 24시간 지난 오래된 스토리 정리
     cutoff_time = (datetime.now() - timedelta(hours=24)).strftime('%Y-%m-%d %H:%M:%S')
     cursor.execute('DELETE FROM stories WHERE created_at < ?', (cutoff_time,))
     conn.commit()
 
-    # 2. 최근 24시간 이내 스토리만 조회
     cursor.execute('SELECT id, username, title, desc, image_url, created_at FROM stories ORDER BY id DESC')
     rows = cursor.fetchall()
 
@@ -243,7 +288,6 @@ def create_story():
 
     return jsonify({'status': 'success'})
 
-# 스토리 읽음 처리 API
 @app.route('/api/stories/<int:story_id>/view', methods=['POST'])
 def mark_story_viewed(story_id):
     if 'username' not in session:
@@ -257,7 +301,7 @@ def mark_story_viewed(story_id):
         cursor.execute('INSERT INTO story_views (story_id, username) VALUES (?, ?)', (story_id, username))
         conn.commit()
     except sqlite3.IntegrityError:
-        pass  # 이미 읽은 기록이 있으면 무시
+        pass
 
     conn.close()
     return jsonify({'status': 'success'})
@@ -267,7 +311,7 @@ def mark_story_viewed(story_id):
 def get_posts():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('SELECT id, username, title, content, image_url, likes FROM posts ORDER BY id DESC')
+    cursor.execute('SELECT id, username, title, content, image_url, likes, created_at FROM posts ORDER BY id DESC')
     rows = cursor.fetchall()
 
     user = session.get('username')
@@ -286,6 +330,7 @@ def get_posts():
             'content': r[3],
             'image_url': r[4],
             'likes': r[5],
+            'created_at': r[6],
             'is_liked': liked
         })
     conn.close()
@@ -299,11 +344,11 @@ def get_my_posts():
     username = session['username']
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('SELECT id, title, content, image_url, likes FROM posts WHERE username = ? ORDER BY id DESC', (username,))
+    cursor.execute('SELECT id, title, content, image_url, likes, created_at FROM posts WHERE username = ? ORDER BY id DESC', (username,))
     rows = cursor.fetchall()
     conn.close()
 
-    posts = [{'id': r[0], 'title': r[1], 'content': r[2], 'image_url': r[3], 'likes': r[4]} for r in rows]
+    posts = [{'id': r[0], 'title': r[1], 'content': r[2], 'image_url': r[3], 'likes': r[4], 'created_at': r[5]} for r in rows]
     return jsonify({'status': 'success', 'posts': posts})
 
 @app.route('/api/posts', methods=['POST'])
@@ -320,10 +365,12 @@ def create_post():
         return jsonify({'status': 'error', 'message': '제목과 내용을 모두 입력해주세요.'}), 400
 
     username = session['username']
+    now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO posts (username, title, content, image_url) VALUES (?, ?, ?, ?)', 
-                   (username, title, content, image_url))
+    cursor.execute('INSERT INTO posts (username, title, content, image_url, created_at) VALUES (?, ?, ?, ?, ?)', 
+                   (username, title, content, image_url, now_str))
     conn.commit()
     conn.close()
 
@@ -362,10 +409,10 @@ def toggle_like(post_id):
 def get_comments(post_id):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('SELECT id, username, content FROM comments WHERE post_id = ? ORDER BY id ASC', (post_id,))
+    cursor.execute('SELECT id, username, content, created_at FROM comments WHERE post_id = ? ORDER BY id ASC', (post_id,))
     rows = cursor.fetchall()
     conn.close()
-    return jsonify({'status': 'success', 'comments': [{'id': r[0], 'username': r[1], 'content': r[2]} for r in rows]})
+    return jsonify({'status': 'success', 'comments': [{'id': r[0], 'username': r[1], 'content': r[2], 'created_at': r[3]} for r in rows]})
 
 @app.route('/api/comments', methods=['POST'])
 def add_comment():
@@ -380,9 +427,12 @@ def add_comment():
         return jsonify({'status': 'error', 'message': '댓글 내용을 입력해 주세요.'}), 400
 
     username = session['username']
+    now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO comments (post_id, username, content) VALUES (?, ?, ?)', (post_id, username, content))
+    cursor.execute('INSERT INTO comments (post_id, username, content, created_at) VALUES (?, ?, ?, ?)', 
+                   (post_id, username, content, now_str))
     conn.commit()
     conn.close()
     return jsonify({'status': 'success'})

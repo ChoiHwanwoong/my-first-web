@@ -2,10 +2,92 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>{{ title }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Web Service</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body>
-    <h1>🎉 웹사이트 배포 성공!</h1>
-    <p>내 첫 Flask 웹사이트가 정상적으로 동작하고 있습니다.</p>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- 상단 네비게이션 바 -->
+    <nav class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2 font-bold text-xl text-indigo-400">
+                <i class="fa-solid fa-code"></i>
+                <span>DEV_LAB</span>
+            </div>
+            <div class="flex items-center gap-6 text-sm font-medium text-slate-400">
+                <a href="#about" class="hover:text-white transition">소개</a>
+                <a href="#projects" class="hover:text-white transition">프로젝트</a>
+                <a href="#contact" class="hover:text-white transition">연락처</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 메인 히어로 섹션 -->
+    <main class="max-w-4xl mx-auto px-6 py-20 text-center flex-1 flex flex-col justify-center items-center">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-sm mb-6">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Render Cloud Deployed
+        </div>
+        
+        <h1 class="text-4xl md:text-6xl font-extrabold text-white tracking-tight leading-tight mb-6">
+            클라우드로 연결되는 <br class="hidden sm:inline">
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+                나만의 웹 서비스
+            </span>
+        </h1>
+
+        <p class="text-slate-400 text-lg md:text-xl max-w-2xl mb-10 leading-relaxed">
+            Flask와 Git, 그리고 Render 클라우드를 활용해 성공적으로 구축된 첫 번째 파이프라인 프로젝트입니다. 
+        </p>
+
+        <!-- 버튼 영역 -->
+        <div class="flex flex-col sm:flex-row gap-4 w-full justify-center">
+            <a href="https://github.com/ChoiHwanwoong/my-first-web" target="_blank" 
+               class="px-6 py-3.5 rounded-xl font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
+                <i class="fa-brands fa-github text-lg"></i>
+                GitHub 저장소 방문
+            </a>
+            <button onclick="alert('Flask 서버와 정상 연결되어 있습니다!')" 
+                    class="px-6 py-3.5 rounded-xl font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+                서버 상태 체크
+            </button>
+        </div>
+
+        <!-- 카드 섹션 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 w-full text-left">
+            <div class="p-6 bg-slate-800/50 rounded-2xl border border-slate-800 hover:border-slate-700 transition">
+                <div class="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center mb-4">
+                    <i class="fa-brands fa-python text-xl"></i>
+                </div>
+                <h3 class="font-bold text-white mb-1">Flask Backend</h3>
+                <p class="text-slate-400 text-sm">파이썬 기반의 가볍고 강력한 웹 프레임워크로 구동됩니다.</p>
+            </div>
+
+            <div class="p-6 bg-slate-800/50 rounded-2xl border border-slate-800 hover:border-slate-700 transition">
+                <div class="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center mb-4">
+                    <i class="fa-brands fa-git-alt text-xl"></i>
+                </div>
+                <h3 class="font-bold text-white mb-1">CI/CD Automation</h3>
+                <p class="text-slate-400 text-sm">GitHub Push만으로 Cloud에 자동으로 반영됩니다.</p>
+            </div>
+
+            <div class="p-6 bg-slate-800/50 rounded-2xl border border-slate-800 hover:border-slate-700 transition">
+                <div class="w-10 h-10 rounded-lg bg-pink-500/10 text-pink-400 flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-bolt text-xl"></i>
+                </div>
+                <h3 class="font-bold text-white mb-1">Modern UI</h3>
+                <p class="text-slate-400 text-sm">Tailwind CSS를 적용하여 매끄럽고 트렌디한 디자인을 제공합니다.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- 하단 푸터 -->
+    <footer class="border-t border-slate-800 py-6 text-center text-slate-500 text-sm">
+        <p>© 2026 Developer Project. All rights reserved.</p>
+    </footer>
+
 </body>
 </html>

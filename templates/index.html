@@ -149,6 +149,25 @@
         </div>
     </div>
 
+    <!-- ✏️ 2-1. 게시물 수정 모달 -->
+    <div id="editPostModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
+            <button onclick="closeEditPostModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <h3 class="text-sm font-bold text-center border-b border-slate-100 pb-3 mb-4">게시물 수정하기</h3>
+
+            <div class="space-y-3 text-xs">
+                <input type="hidden" id="editPostId">
+                <input type="text" id="editPostTitleInput" placeholder="제목" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
+                <textarea id="editPostContentInput" rows="3" placeholder="문구 수정..." class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400 resize-none"></textarea>
+                
+                <button id="submitEditPostBtn" onclick="submitEditPost()" class="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition">수정 완료</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 3. 스토리 작성 모달 -->
     <div id="createStoryModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
@@ -430,7 +449,7 @@
                             `<img src="${post.profile_img}" class="w-full h-full object-cover">` :
                             getDefaultAvatar("text-xs");
 
-                        const canDelete = currentUser && (currentUser === post.username || isAdminUser);
+                        const canManage = currentUser && (currentUser === post.username || isAdminUser);
 
                         article.innerHTML = `
                             <div class="p-3 flex items-center justify-between border-b border-slate-100">
@@ -443,10 +462,15 @@
                                     </a>
                                     <span class="text-[11px] text-slate-400">• ${timeAgo(post.created_at)}</span>
                                 </div>
-                                ${canDelete ? `
-                                    <button onclick="deletePost(${post.id})" class="text-slate-400 hover:text-red-500 transition px-1 text-xs" title="게시글 삭제">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </button>
+                                ${canManage ? `
+                                    <div class="flex items-center gap-2">
+                                        <button onclick="openEditPostModal(${post.id}, '${escapeHtml(post.title)}', '${escapeHtml(post.content)}')" class="text-slate-400 hover:text-blue-500 transition px-1 text-xs" title="게시글 수정">
+                                            <i class="fa-solid fa-pen"></i>
+                                        </button>
+                                        <button onclick="deletePost(${post.id})" class="text-slate-400 hover:text-red-500 transition px-1 text-xs" title="게시글 삭제">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
                                 ` : ''}
                             </div>
 
@@ -476,6 +500,41 @@
                         loadComments(post.id);
                     });
                 });
+        }
+
+        // ✏️ 게시글 수정 모달 제어
+        function openEditPostModal(id, title, content) {
+            document.getElementById('editPostId').value = id;
+            document.getElementById('editPostTitleInput').value = title;
+            document.getElementById('editPostContentInput').value = content;
+            document.getElementById('editPostModal').classList.remove('hidden');
+        }
+
+        function closeEditPostModal() {
+            document.getElementById('editPostModal').classList.add('hidden');
+        }
+
+        function submitEditPost() {
+            const id = document.getElementById('editPostId').value;
+            const title = document.getElementById('editPostTitleInput').value.trim();
+            const content = document.getElementById('editPostContentInput').value.trim();
+
+            if (!title || !content) { alert('제목과 내용을 모두 입력해 주세요.'); return; }
+
+            fetch(`/api/posts/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, content })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    closeEditPostModal();
+                    loadPosts();
+                } else {
+                    alert(data.message);
+                }
+            });
         }
 
         function deletePost(postId) {
@@ -576,7 +635,6 @@
         }
         function closeCreatePostModal() { document.getElementById('createPostModal').classList.add('hidden'); }
 
-        // 🔒 게시글 중복 제출 방지 로직 적용
         async function submitNewPost() {
             if (isSubmittingPost) return;
 
@@ -588,7 +646,6 @@
 
             if (!title || !content) { alert('제목과 내용을 입력해 주세요.'); return; }
 
-            // 중복 클릭 잠금
             isSubmittingPost = true;
             submitBtn.disabled = true;
             submitBtn.innerText = '공유 중...';
@@ -646,7 +703,6 @@
         }
         function closeCreateStoryModal() { document.getElementById('createStoryModal').classList.add('hidden'); }
 
-        // 🔒 스토리 중복 제출 방지 로직 적용
         async function submitNewStory() {
             if (isSubmittingStory) return;
 
@@ -658,7 +714,6 @@
 
             if (!title) { alert('스토리 제목을 입력해 주세요.'); return; }
 
-            // 중복 클릭 잠금
             isSubmittingStory = true;
             submitBtn.disabled = true;
             submitBtn.innerText = '올리는 중...';

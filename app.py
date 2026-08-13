@@ -10,9 +10,7 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_for_woongstagram_app'
 
-# 📌 1단계에서 복사한 Neon Connection String 주소를 아래 큰따옴표 안에 넣어주세요!
-# (Render 환경변수 DATABASE_URL이 설정되어 있으면 해당 값을 우선 사용합니다)
-DEFAULT_DB_URL = "postgresql://neondb_owner:npg_DPU7iQ4jlFsx@ep-restless-credit-azhz0tug.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+DEFAULT_DB_URL = "postgresql://neondb_owner:YOUR_PASSWORD@ep-xyz.region.aws.neon.tech/neondb?sslmode=require"
 DATABASE_URL = os.environ.get('DATABASE_URL', DEFAULT_DB_URL)
 
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
@@ -706,6 +704,41 @@ def get_single_post(post_id):
             'is_liked': liked
         }
     })
+
+# ✏️ 게시글 수정 API
+@app.route('/api/posts/<int:post_id>', methods=['PUT'])
+def update_user_post(post_id):
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
+
+    data = request.json
+    title = data.get('title', '').strip()
+    content = data.get('content', '').strip()
+
+    if not title or not content:
+        return jsonify({'status': 'error', 'message': '제목과 내용을 모두 입력해 주세요.'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT username FROM posts WHERE id = %s;', (post_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        cursor.close()
+        conn.close()
+        return jsonify({'status': 'error', 'message': '게시글을 찾을 수 없습니다.'}), 404
+
+    if not is_admin() and row[0] != session['username']:
+        cursor.close()
+        conn.close()
+        return jsonify({'status': 'error', 'message': '수정 권한이 없습니다.'}), 403
+
+    cursor.execute('UPDATE posts SET title = %s, content = %s WHERE id = %s;', (title, content, post_id))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'status': 'success'})
 
 @app.route('/api/posts/<int:post_id>', methods=['DELETE'])
 def delete_user_post(post_id):

@@ -40,8 +40,14 @@ def init_db():
             name VARCHAR(100),
             email VARCHAR(255),
             password VARCHAR(255) NOT NULL,
-            profile_img TEXT DEFAULT ''
+            profile_img TEXT DEFAULT '',
+            username_updated_at TIMESTAMP
         );
+    ''')
+
+    # 기존 DB 호환용 컬럼 추가 예외 처리
+    cursor.execute('''
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS username_updated_at TIMESTAMP;
     ''')
 
     cursor.execute('''
@@ -464,6 +470,80 @@ def change_password():
     conn.close()
 
     return jsonify({'status': 'success'})
+
+# 🆔 [신규] 30일 제한 아이디 변경 API
+@app.route('/api/change-username', methods=['POST'])
+def change_username():
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
+
+    current_username = session['username']
+    if current_username == 'admin':
+        return jsonify({'status': 'error', 'message': '관리자 계정의 아이디는 변경할 수 없습니다.'}), 400
+
+    data = request.json
+    new_username = data.get('new_username', '').strip()
+
+    if not new_username:
+        return jsonify({'status': 'error', 'message': '새로운 아이디를 입력해 주세요.'}), 400
+
+    if new_username == current_username:
+        return jsonify({'status': 'error', 'message': '현재 아이디와 동일합니다.'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    # 1. 변경 희망 아이디 중복 검사
+    cursor.execute('SELECT 1 FROM users WHERE username = %s;', (new_username,))
+    if cursor.fetchone():
+        cursor.close()
+        conn.close()
+        return jsonify({'status': 'error', 'message': '이미 다른 사용자가 사용 중인 아이디입니다.'}), 400
+
+    # 2. 30일 제한 확인
+    cursor.execute('SELECT username_updated_at FROM users WHERE username = %s;', (current_username,))
+    user_row = cursor.fetchone()
+    now_kst = get_kst_now()
+
+    if user_row and user_row['username_updated_at']:
+        last_updated = user_row['username_updated_at']
+        # KST 시각 차이 계산
+        if last_updated.tzinfo is None:
+            last_updated = last_updated.replace(tzinfo=timezone.utc) + timedelta(hours=9)
+        
+        time_diff = now_kst - last_updated
+        if time_diff.days < 30:
+            remaining_days = 30 - time_diff.days
+            cursor.close()
+            conn.close()
+            return jsonify({
+                'status': 'error', 
+                'message': f'아이디는 30일에 한 번만 변경할 수 있습니다. (다시 변경 가능까지: 약 {remaining_days}일 남음)'
+            }), 400
+
+    # 3. 아이디 변경 및 연관 DB 레코드 일괄 업데이트
+    try:
+        cursor.execute('UPDATE users SET username = %s, name = %s, username_updated_at = %s WHERE username = %s;', (new_username, new_username, now_kst, current_username))
+        cursor.execute('UPDATE posts SET username = %s WHERE username = %s;', (new_username, current_username))
+        cursor.execute('UPDATE comments SET username = %s WHERE username = %s;', (new_username, current_username))
+        cursor.execute('UPDATE stories SET username = %s WHERE username = %s;', (new_username, current_username))
+        cursor.execute('UPDATE follows SET follower = %s WHERE follower = %s;', (new_username, current_username))
+        cursor.execute('UPDATE follows SET following = %s WHERE following = %s;', (new_username, current_username))
+        cursor.execute('UPDATE post_likes SET username = %s WHERE username = %s;', (new_username, current_username))
+        cursor.execute('UPDATE story_views SET username = %s WHERE username = %s;', (new_username, current_username))
+
+        conn.commit()
+        session['username'] = new_username
+        session['name'] = new_username
+        
+        cursor.close()
+        conn.close()
+        return jsonify({'status': 'success', 'new_username': new_username})
+    except Exception as e:
+        conn.rollback()
+        cursor.close()
+        conn.close()
+        return jsonify({'status': 'error', 'message': f'아이디 변경 중 오류가 발생했습니다: {str(e)}'}), 500
 
 @app.route('/api/delete-account', methods=['POST'])
 def delete_account():
@@ -949,7 +1029,6 @@ def get_user_posts(username):
 
     return jsonify({'status': 'success', 'posts': posts})
 
-# 🔒 [신규] 내가 좋아요한 게시물 API (본인 전용)
 @app.route('/api/users/<username>/liked-posts', methods=['GET'])
 def get_user_liked_posts(username):
     if session.get('username') != username and not is_admin():
@@ -994,7 +1073,6 @@ def get_user_liked_posts(username):
 
     return jsonify({'status': 'success', 'posts': posts})
 
-# 🔒 [신규] 내가 댓글 달았던 게시물 API (본인 전용)
 @app.route('/api/users/<username>/commented-posts', methods=['GET'])
 def get_user_commented_posts(username):
     if session.get('username') != username and not is_admin():

@@ -76,7 +76,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS stories (
             id SERIAL PRIMARY KEY,
             username VARCHAR(100) NOT NULL,
-            title VARCHAR(255) NOT NULL,
+            title VARCHAR(255) DEFAULT '',
             desc_text TEXT NOT NULL,
             image_url TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -559,7 +559,7 @@ def get_following(username):
     conn.close()
     return jsonify({'status': 'success', 'users': [r[0] for r in rows]})
 
-# ☁️ 다중/단일 파일 Cloudinary 업로드 API
+# ☁️ 업로드 API
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     if 'username' not in session:
@@ -647,7 +647,7 @@ def get_recommendations():
     conn.close()
     return jsonify({'status': 'success', 'recommendations': recommendations})
 
-# --- 📸 Story APIs ---
+# --- 📸 Story APIs (제목 없는 형태 지원) ---
 @app.route('/api/stories', methods=['GET'])
 def get_stories():
     conn = get_db_connection()
@@ -672,7 +672,7 @@ def get_stories():
         stories.append({
             'id': story_id,
             'username': r['username'],
-            'title': r['title'],
+            'title': r['title'] or '',
             'desc': r['desc_text'],
             'image_url': r['image_url'],
             'created_at': r['created_at'].strftime('%Y-%m-%d %H:%M:%S') if r['created_at'] else '',
@@ -694,8 +694,9 @@ def create_story():
     desc = data.get('desc', '').strip()
     image_url = data.get('image_url', '').strip()
 
-    if not title:
-        return jsonify({'status': 'error', 'message': '제목을 입력해 주세요.'}), 400
+    # 문구 내용 또는 사진 중 하나는 필수
+    if not desc and not image_url:
+        return jsonify({'status': 'error', 'message': '스토리 내용이나 사진을 등록해 주세요.'}), 400
 
     username = session['username']
 
@@ -756,7 +757,7 @@ def mark_story_viewed(story_id):
     conn.close()
     return jsonify({'status': 'success'})
 
-# --- 📝 Post APIs (다중 이미지 지원) ---
+# --- 📝 Post APIs ---
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
     conn = get_db_connection()

@@ -160,7 +160,7 @@
         </div>
     </div>
 
-    <!-- 2. 게시물 작성 모달 (최대 5장 지원) -->
+    <!-- 2. 게시물 작성 모달 -->
     <div id="createPostModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
             <button onclick="closeCreatePostModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -208,7 +208,7 @@
         </div>
     </div>
 
-    <!-- 3. 스토리 작성 모달 -->
+    <!-- 3. 스토리 작성 모달 (제목창 삭제) -->
     <div id="createStoryModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
             <button onclick="closeCreateStoryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -218,25 +218,23 @@
             <h3 class="text-sm font-bold text-center border-b border-slate-100 pb-3 mb-4">내 스토리 올리기 (24시간 유지)</h3>
 
             <div class="space-y-3 text-xs">
-                <input type="text" id="storyTitleInput" placeholder="스토리 제목" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
-                
                 <div class="border border-slate-200 rounded-lg p-2.5 bg-slate-50 flex items-center justify-between">
                     <input type="file" id="storyFileInput" accept="image/*" onchange="handleMultipleFileSelect(this, 'story')" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100">
                 </div>
 
                 <div id="storyCroppedPreviewArea" class="hidden text-center py-2">
                     <img id="storyCroppedPreview" class="max-h-48 mx-auto rounded-lg border border-slate-200 shadow-sm">
-                    <span class="text-[10px] text-green-600 font-bold block mt-1"><i class="fa-solid fa-circle-check"></i> 편집된 스토리 적용됨</span>
+                    <span class="text-[10px] text-green-600 font-bold block mt-1"><i class="fa-solid fa-circle-check"></i> 편집된 스토리 사진 적용됨</span>
                 </div>
 
-                <input type="text" id="storyDescInput" placeholder="스토리 문구 (선택)" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
+                <textarea id="storyDescInput" rows="3" placeholder="스토리에 남길 문구를 입력하세요..." class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400 resize-none"></textarea>
                 
                 <button id="submitStoryBtn" onclick="submitNewStory()" class="w-full py-2.5 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-lg transition disabled:bg-pink-300 disabled:cursor-not-allowed">스토리 올리기</button>
             </div>
         </div>
     </div>
 
-    <!-- ✂️ 3-1. 이미지 자르기 / 크기 조절 모달 -->
+    <!-- ✂️ 3-1. 이미지 자르기 모달 -->
     <div id="cropperModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh]">
             <div class="p-4 border-b border-slate-100 font-bold text-center text-xs text-slate-900 flex justify-between items-center">
@@ -270,7 +268,7 @@
         </div>
     </div>
 
-    <!-- 4. 스토리 뷰어 모달 -->
+    <!-- 4. 스토리 뷰어 모달 (제목 표시 제거) -->
     <div id="storyModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center">
         <button onclick="closeStoryModal()" class="absolute top-5 right-5 text-white text-2xl hover:text-slate-400 z-50">
             <i class="fa-solid fa-xmark"></i>
@@ -293,9 +291,10 @@
                 </div>
             </div>
 
-            <div id="storyBg" class="absolute inset-0 flex flex-col items-center justify-center text-white p-8 text-center bg-cover bg-center">
-                <h3 id="storyTitle" class="text-2xl font-bold tracking-tight mb-2 drop-shadow-md">Story Title</h3>
-                <p id="storyDesc" class="text-xs text-white/90 leading-relaxed max-w-xs drop-shadow-md">Story Description Content</p>
+            <div id="storyBg" class="absolute inset-0 flex flex-col items-center justify-end text-white p-6 pb-12 text-center bg-cover bg-center">
+                <div id="storyDescBox" class="bg-black/40 backdrop-blur-md p-4 rounded-xl max-w-xs border border-white/20 shadow-lg">
+                    <p id="storyDesc" class="text-sm font-medium text-white leading-relaxed drop-shadow-md">Story Content</p>
+                </div>
             </div>
         </div>
     </div>
@@ -309,7 +308,6 @@
         let isSubmittingPost = false;
         let isSubmittingStory = false;
 
-        // ✂️ 멀티 파일 Cropper 변수
         let cropperInstance = null;
         let currentCropMode = null;
         let pendingFiles = [];
@@ -349,12 +347,11 @@
             return `${past.getFullYear()}년 ${past.getMonth() + 1}월 ${past.getDate()}일`;
         }
 
-        // ✂️ 멀티 파일 선택 처리
         function handleMultipleFileSelect(input, mode) {
             if (!input.files || input.files.length === 0) return;
 
             currentCropMode = mode;
-            pendingFiles = Array.from(input.files).slice(0, 5); // 최대 5장 제한
+            pendingFiles = Array.from(input.files).slice(0, 5);
             currentFileIndex = 0;
 
             if (mode === 'post') postCroppedBlobs = [];
@@ -583,7 +580,7 @@
                         data.stories.forEach(s => {
                             const item = document.createElement('div');
                             item.className = "flex flex-col items-center gap-1 min-w-[64px] cursor-pointer group shrink-0";
-                            item.onclick = () => showStoryModal(item, s.id, s.username, s.title, s.desc, s.image_url, s.created_at, s.profile_img);
+                            item.onclick = () => showStoryModal(item, s.id, s.username, s.desc, s.image_url, s.created_at, s.profile_img);
                             
                             const ringClass = s.is_viewed ? 'story-viewed' : 'story-ring';
                             const avatarHtml = s.profile_img ?
@@ -604,7 +601,6 @@
                 });
         }
 
-        // 📸 게시글 로드 (슬라이더 지원)
         function loadPosts() {
             fetch('/api/posts')
                 .then(res => res.json())
@@ -629,7 +625,6 @@
                             if (images.length === 1) {
                                 mediaHtml = `<img src="${escapeHtml(images[0])}" class="w-full max-h-[450px] object-cover border-y border-slate-100">`;
                             } else {
-                                // 🌟 2장 이상인 경우 슬라이더 생성
                                 const slides = images.map((img, idx) => `
                                     <div class="w-full flex-shrink-0" style="display: ${idx === 0 ? 'block' : 'none'};" data-slide="${idx}">
                                         <img src="${escapeHtml(img)}" class="w-full max-h-[450px] object-cover border-y border-slate-100">
@@ -718,7 +713,6 @@
                 });
         }
 
-        // 🌟 게시글 이미지 슬라이더 동작
         function slidePost(postId, direction) {
             const slider = document.getElementById(`slider-${postId}`);
             if (!slider) return;
@@ -879,7 +873,6 @@
             document.getElementById('postCroppedPreviewArea').classList.add('hidden');
         }
 
-        // 🚀 멀티 이미지 제출 함수
         async function submitNewPost() {
             if (isSubmittingPost) return;
 
@@ -949,15 +942,15 @@
             document.getElementById('storyCroppedPreviewArea').classList.add('hidden');
         }
 
+        // 📸 제목 없는 스토리 전송 함수
         async function submitNewStory() {
             if (isSubmittingStory) return;
 
-            const title = document.getElementById('storyTitleInput').value.trim();
             const desc = document.getElementById('storyDescInput').value.trim();
             const submitBtn = document.getElementById('submitStoryBtn');
             let imageUrl = '';
 
-            if (!title) { alert('스토리 제목을 입력해 주세요.'); return; }
+            if (!desc && !storyCroppedBlob) { alert('스토리 문구나 사진을 추가해 주세요.'); return; }
 
             isSubmittingStory = true;
             submitBtn.disabled = true;
@@ -975,13 +968,12 @@
                 const res = await fetch('/api/stories', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title: title, desc: desc, image_url: imageUrl })
+                    body: JSON.stringify({ desc: desc, image_url: imageUrl })
                 });
                 const data = await res.json();
 
                 if (data.status === 'success') {
                     closeCreateStoryModal();
-                    document.getElementById('storyTitleInput').value = '';
                     document.getElementById('storyFileInput').value = '';
                     document.getElementById('storyDescInput').value = '';
                     loadStories();
@@ -1004,7 +996,8 @@
             }
         }
 
-        function showStoryModal(el, storyId, username, title, desc, imageUrl, createdAt, profileImg) {
+        // 📸 스토리 뷰어 모달 (제목 제거 및 깔끔한 문구 영역만 표시)
+        function showStoryModal(el, storyId, username, desc, imageUrl, createdAt, profileImg) {
             if (currentUser) {
                 fetch(`/api/stories/${storyId}/view`, { method: 'POST' });
             }
@@ -1031,9 +1024,17 @@
             }
 
             document.getElementById('storyTimeAgo').innerText = timeAgo(createdAt);
-            document.getElementById('storyTitle').innerText = title;
-            document.getElementById('storyDesc').innerText = desc;
             
+            const descEl = document.getElementById('storyDesc');
+            const descBox = document.getElementById('storyDescBox');
+            
+            if (desc) {
+                descEl.innerText = desc;
+                descBox.classList.remove('hidden');
+            } else {
+                descBox.classList.add('hidden');
+            }
+
             const bg = document.getElementById('storyBg');
             if (imageUrl) {
                 bg.style.backgroundImage = `url('${imageUrl}')`;

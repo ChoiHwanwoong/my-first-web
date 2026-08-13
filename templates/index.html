@@ -18,7 +18,7 @@
         .animate-progress { animation: progress 5s linear forwards; }
     </style>
 </head>
-<body class="bg-white text-slate-900 font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-pink-500 selection:text-white" onclick="closeSearchDropdown(event)">
+<body class="bg-white text-slate-900 font-sans antialiased min-h-screen flex flex-col justify-between selection:bg-pink-500 selection:text-white" onclick="handleOutsideClicks(event)">
 
     <!-- Header Navigation -->
     <header class="border-b border-slate-200 bg-white sticky top-0 z-40">
@@ -44,6 +44,24 @@
             <div class="flex items-center gap-5 text-xl text-slate-800 shrink-0">
                 <i onclick="location.reload()" class="fa-solid fa-house cursor-pointer hover:text-slate-500 transition" title="홈"></i>
                 <i onclick="openCreatePostModal()" class="fa-square-plus fa-regular cursor-pointer hover:text-slate-500 transition" title="새 게시물 만들기"></i>
+                
+                <!-- 🔔 알림 드롭다운 버튼 -->
+                <div class="relative">
+                    <button onclick="toggleNotificationDropdown(event)" class="relative hover:text-slate-500 transition flex items-center" title="알림">
+                        <i class="fa-regular fa-heart"></i>
+                        <span id="notifBadge" class="hidden absolute -top-1 -right-1.5 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">0</span>
+                    </button>
+
+                    <!-- 🔔 알림 목록 드롭다운 -->
+                    <div id="notifDropdown" class="hidden absolute top-10 right-0 w-72 sm:w-80 bg-white border border-slate-200 rounded-2xl shadow-2xl max-h-96 overflow-y-auto p-3 text-xs z-50 divide-y divide-slate-100">
+                        <div class="font-bold text-slate-900 pb-2 mb-1 flex justify-between items-center text-xs">
+                            <span>알림</span>
+                            <span id="unreadNotifText" class="text-[10px] text-blue-500 font-normal"></span>
+                        </div>
+                        <div id="notifList" class="space-y-2 pt-2"></div>
+                    </div>
+                </div>
+
                 <a href="/admin" id="headerAdminBtn" class="hidden text-red-500 hover:text-red-700 transition" title="관리자 대시보드">
                     <i class="fa-solid fa-key"></i>
                 </a>
@@ -219,7 +237,7 @@
         </div>
     </div>
 
-    <!-- 2-2. 검색용 게시글 상세 모달 -->
+    <!-- 2-2. 게시글 상세 모달 -->
     <div id="postDetailModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl relative flex flex-col md:flex-row max-h-[85vh]">
             <button onclick="closePostDetailModal()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 z-10 bg-white/80 p-1 rounded-full">
@@ -363,6 +381,7 @@
             loadStories();
             loadPosts();
             loadHotNews();
+            setInterval(loadNotifications, 10000); // 10초 주기 알림 갱신
         });
 
         function timeAgo(dateString) {
@@ -386,7 +405,108 @@
             return `${past.getFullYear()}년 ${past.getMonth() + 1}월 ${past.getDate()}일`;
         }
 
-        // 🔍 실시간 유저 & 게시글 검색 처리 함수
+        // 🔔 알림 데이터 불러오기
+        function loadNotifications() {
+            if (!currentUser) return;
+
+            fetch('/api/notifications')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const badge = document.getElementById('notifBadge');
+                        const list = document.getElementById('notifList');
+                        const unreadText = document.getElementById('unreadNotifText');
+
+                        if (data.unread_count > 0) {
+                            badge.innerText = data.unread_count;
+                            badge.classList.remove('hidden');
+                            unreadText.innerText = `새 알림 ${data.unread_count}개`;
+                        } else {
+                            badge.classList.add('hidden');
+                            unreadText.innerText = '';
+                        }
+
+                        list.innerHTML = '';
+                        if (data.notifications.length === 0) {
+                            list.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs">새로운 알림이 없습니다.</div>`;
+                            return;
+                        }
+
+                        data.notifications.forEach(n => {
+                            const avatar = n.profile_img ? 
+                                `<img src="${n.profile_img}" class="w-full h-full object-cover">` : 
+                                getDefaultAvatar("text-[10px]");
+
+                            let msg = '';
+                            let icon = '';
+
+                            if (n.type === 'like') {
+                                msg = '님이 회원님의 게시글을 좋아합니다. ❤️';
+                                icon = 'fa-heart text-red-500';
+                            } else if (n.type === 'comment') {
+                                msg = '님이 회원님의 게시글에 댓글을 남겼습니다. 💬';
+                                icon = 'fa-comment text-blue-500';
+                            } else if (n.type === 'follow') {
+                                msg = '님이 회원님을 팔로우하기 시작했습니다. 👤';
+                                icon = 'fa-user-plus text-green-500';
+                            }
+
+                            const item = document.createElement('div');
+                            item.className = `flex items-center gap-2.5 p-2 rounded-xl transition cursor-pointer ${n.is_read ? 'bg-white' : 'bg-blue-50/60'}`;
+                            item.onclick = () => {
+                                if (n.type === 'follow') {
+                                    window.location.href = `/profile/${n.actor}`;
+                                } else if (n.post_id) {
+                                    openPostDetailModal(n.post_id);
+                                }
+                            };
+
+                            item.innerHTML = `
+                                <div class="w-8 h-8 rounded-full overflow-hidden border border-slate-200 shrink-0">
+                                    ${avatar}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-[11px] text-slate-800 leading-snug">
+                                        <strong class="font-bold">@${escapeHtml(n.actor)}</strong> ${msg}
+                                    </p>
+                                    <span class="text-[9px] text-slate-400">${timeAgo(n.created_at)}</span>
+                                </div>
+                            `;
+                            list.appendChild(item);
+                        });
+                    }
+                });
+        }
+
+        // 🔔 알림 드롭다운 토글 및 읽음 처리
+        function toggleNotificationDropdown(e) {
+            e.stopPropagation();
+            if (!currentUser) { alert('로그인이 필요합니다.'); openAuthModal(); return; }
+
+            const dropdown = document.getElementById('notifDropdown');
+            const isHidden = dropdown.classList.contains('hidden');
+
+            if (isHidden) {
+                dropdown.classList.remove('hidden');
+                fetch('/api/notifications/read', { method: 'POST' })
+                    .then(() => {
+                        document.getElementById('notifBadge').classList.add('hidden');
+                        document.getElementById('unreadNotifText').innerText = '';
+                    });
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        }
+
+        function handleOutsideClicks(e) {
+            closeSearchDropdown(e);
+            
+            const notifDropdown = document.getElementById('notifDropdown');
+            if (notifDropdown && !notifDropdown.contains(e.target)) {
+                notifDropdown.classList.add('hidden');
+            }
+        }
+
         function handleSearchInput(value) {
             clearTimeout(searchTimer);
             const dropdown = document.getElementById('searchResultsDropdown');
@@ -591,6 +711,7 @@
                         currentUser = data.username;
                         isAdminUser = data.is_admin;
                         headerBtn.classList.remove('hidden');
+                        loadNotifications();
 
                         if (isAdminUser) {
                             adminBtn.classList.remove('hidden');

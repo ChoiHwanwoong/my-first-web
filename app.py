@@ -110,11 +110,34 @@ def init_db():
             UNIQUE(follower, following)
         );
     ''')
+
+    # 🔔 알림 테이블 추가
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS notifications (
+            id SERIAL PRIMARY KEY,
+            recipient VARCHAR(100) NOT NULL,
+            actor VARCHAR(100) NOT NULL,
+            type VARCHAR(20) NOT NULL,
+            post_id INT,
+            is_read BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    ''')
+
     conn.commit()
     cursor.close()
     conn.close()
 
 init_db()
+
+def create_notification(cursor, recipient, actor, notif_type, post_id=None):
+    if recipient == actor:
+        return
+    now_kst = get_kst_now()
+    cursor.execute('''
+        INSERT INTO notifications (recipient, actor, type, post_id, created_at)
+        VALUES (%s, %s, %s, %s, %s);
+    ''', (recipient, actor, notif_type, post_id, now_kst))
 
 def is_admin():
     return session.get('username') == 'admin'
@@ -134,7 +157,64 @@ def admin_page():
         return "<script>alert('관리자 권한이 필요합니다.'); location.href='/';</script>"
     return render_template('admin.html')
 
-# 🔍 [신규] 유저 & 게시글 통합 검색 API
+# 🔔 [신규] 알림 목록 조회 API
+@app.route('/api/notifications', methods=['GET'])
+def get_notifications():
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
+
+    username = session['username']
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    cursor.execute('''
+        SELECT n.id, n.actor, n.type, n.post_id, n.is_read, n.created_at, u.profile_img
+        FROM notifications n
+        LEFT JOIN users u ON n.actor = u.username
+        WHERE n.recipient = %s
+        ORDER BY n.id DESC
+        LIMIT 20;
+    ''', (username,))
+    rows = cursor.fetchall()
+
+    notifications = []
+    unread_count = 0
+    for r in rows:
+        if not r['is_read']:
+            unread_count += 1
+
+        notifications.append({
+            'id': r['id'],
+            'actor': r['actor'],
+            'type': r['type'],
+            'post_id': r['post_id'],
+            'is_read': r['is_read'],
+            'profile_img': r['profile_img'] or '',
+            'created_at': r['created_at'].strftime('%Y-%m-%d %H:%M:%S') if r['created_at'] else ''
+        })
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({'status': 'success', 'notifications': notifications, 'unread_count': unread_count})
+
+# 🔔 [신규] 알림 읽음 처리 API
+@app.route('/api/notifications/read', methods=['POST'])
+def mark_notifications_read():
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
+
+    username = session['username']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('UPDATE notifications SET is_read = TRUE WHERE recipient = %s;', (username,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'status': 'success'})
+
+# 🔍 유저 & 게시글 통합 검색 API
 @app.route('/api/search', methods=['GET'])
 def search_all():
     query = request.args.get('q', '').strip()
@@ -146,12 +226,10 @@ def search_all():
 
     search_pattern = f"%{query}%"
 
-    # 1. 유저 검색 (아이디 키워드 일치)
     cursor.execute('SELECT username, profile_img, bio FROM users WHERE username ILIKE %s ORDER BY id DESC LIMIT 5;', (search_pattern,))
     user_rows = cursor.fetchall()
     users = [{'username': r['username'], 'profile_img': r['profile_img'] or '', 'bio': r['bio'] or ''} for r in user_rows]
 
-    # 2. 게시글 검색 (본문 내용 키워드 일치)
     cursor.execute('SELECT p.id, p.username, p.content, p.image_url, u.profile_img FROM posts p LEFT JOIN users u ON p.username = u.username WHERE p.content ILIKE %s ORDER BY p.id DESC LIMIT 5;', (search_pattern,))
     post_rows = cursor.fetchall()
     posts = []
@@ -244,6 +322,7 @@ def delete_admin_user(username):
     cursor.execute('DELETE FROM comments WHERE username = %s;', (username,))
     cursor.execute('DELETE FROM stories WHERE username = %s;', (username,))
     cursor.execute('DELETE FROM follows WHERE follower = %s OR following = %s;', (username, username))
+    cursor.execute('DELETE FROM notifications WHERE recipient = %s OR actor = %s;', (username, username))
     conn.commit()
     cursor.close()
     conn.close()
@@ -260,6 +339,7 @@ def delete_admin_post(post_id):
     cursor.execute('DELETE FROM posts WHERE id = %s;', (post_id,))
     cursor.execute('DELETE FROM comments WHERE post_id = %s;', (post_id,))
     cursor.execute('DELETE FROM post_likes WHERE post_id = %s;', (post_id,))
+    cursor.execute('DELETE FROM notifications WHERE post_id = %s;', (post_id,))
     conn.commit()
     cursor.close()
     conn.close()
@@ -596,6 +676,8 @@ def change_username():
         cursor.execute('UPDATE follows SET following = %s WHERE following = %s;', (new_username, current_username))
         cursor.execute('UPDATE post_likes SET username = %s WHERE username = %s;', (new_username, current_username))
         cursor.execute('UPDATE story_views SET username = %s WHERE username = %s;', (new_username, current_username))
+        cursor.execute('UPDATE notifications SET recipient = %s WHERE recipient = %s;', (new_username, current_username))
+        cursor.execute('UPDATE notifications SET actor = %s WHERE actor = %s;', (new_username, current_username))
 
         conn.commit()
         session['username'] = new_username
@@ -642,6 +724,7 @@ def delete_account():
     cursor.execute('DELETE FROM follows WHERE follower = %s OR following = %s;', (username, username))
     cursor.execute('DELETE FROM post_likes WHERE username = %s;', (username,))
     cursor.execute('DELETE FROM story_views WHERE username = %s;', (username,))
+    cursor.execute('DELETE FROM notifications WHERE recipient = %s OR actor = %s;', (username, username))
     conn.commit()
 
     cursor.close()
@@ -655,7 +738,7 @@ def logout():
     session.clear()
     return jsonify({'status': 'success'})
 
-# --- 🤝 Follow APIs ---
+# --- 🤝 Follow APIs (팔로우 알림 연동) ---
 @app.route('/api/follow/<target_username>', methods=['POST'])
 def toggle_follow(target_username):
     if 'username' not in session:
@@ -677,6 +760,8 @@ def toggle_follow(target_username):
     else:
         cursor.execute('INSERT INTO follows (follower, following) VALUES (%s, %s);', (me, target_username))
         is_following = True
+        # 🔔 팔로우 알림 추가
+        create_notification(cursor, recipient=target_username, actor=me, notif_type='follow')
 
     conn.commit()
 
@@ -905,7 +990,7 @@ def mark_story_viewed(story_id):
     conn.close()
     return jsonify({'status': 'success'})
 
-# --- 📝 Post APIs ---
+# --- 📝 Post APIs (좋아요 알림 연동) ---
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
     conn = get_db_connection()
@@ -1054,6 +1139,7 @@ def delete_user_post(post_id):
     cursor.execute('DELETE FROM posts WHERE id = %s;', (post_id,))
     cursor.execute('DELETE FROM comments WHERE post_id = %s;', (post_id,))
     cursor.execute('DELETE FROM post_likes WHERE post_id = %s;', (post_id,))
+    cursor.execute('DELETE FROM notifications WHERE post_id = %s;', (post_id,))
     conn.commit()
     cursor.close()
     conn.close()
@@ -1221,6 +1307,10 @@ def toggle_like(post_id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    cursor.execute('SELECT username FROM posts WHERE id = %s;', (post_id,))
+    post_owner_row = cursor.fetchone()
+    post_owner = post_owner_row[0] if post_owner_row else None
+
     cursor.execute('SELECT 1 FROM post_likes WHERE post_id = %s AND username = %s;', (post_id, username))
     liked = cursor.fetchone()
 
@@ -1232,6 +1322,9 @@ def toggle_like(post_id):
         cursor.execute('INSERT INTO post_likes (post_id, username) VALUES (%s, %s);', (post_id, username))
         cursor.execute('UPDATE posts SET likes = likes + 1 WHERE id = %s;', (post_id,))
         is_liked = True
+        # 🔔 좋아요 알림 생성
+        if post_owner:
+            create_notification(cursor, recipient=post_owner, actor=username, notif_type='like', post_id=post_id)
 
     conn.commit()
     cursor.execute('SELECT likes FROM posts WHERE id = %s;', (post_id,))
@@ -1241,7 +1334,7 @@ def toggle_like(post_id):
 
     return jsonify({'status': 'success', 'is_liked': is_liked, 'likes': new_likes})
 
-# --- 💬 Comment APIs ---
+# --- 💬 Comment APIs (댓글 알림 연동) ---
 @app.route('/api/comments/<int:post_id>', methods=['GET'])
 def get_comments(post_id):
     conn = get_db_connection()
@@ -1278,8 +1371,18 @@ def add_comment():
 
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    cursor.execute('SELECT username FROM posts WHERE id = %s;', (post_id,))
+    post_owner_row = cursor.fetchone()
+    post_owner = post_owner_row[0] if post_owner_row else None
+
     cursor.execute('INSERT INTO comments (post_id, username, content, created_at) VALUES (%s, %s, %s, %s);', 
                    (post_id, username, content, now_kst))
+
+    # 🔔 댓글 알림 생성
+    if post_owner:
+        create_notification(cursor, recipient=post_owner, actor=username, notif_type='comment', post_id=post_id)
+
     conn.commit()
     cursor.close()
     conn.close()

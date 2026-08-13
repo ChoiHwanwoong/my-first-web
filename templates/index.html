@@ -144,7 +144,7 @@
 
                 <textarea id="postContentInput" rows="3" placeholder="문구 입력..." class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400 resize-none"></textarea>
                 
-                <button onclick="submitNewPost()" class="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition">공유하기</button>
+                <button id="submitPostBtn" onclick="submitNewPost()" class="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition disabled:bg-blue-300 disabled:cursor-not-allowed">공유하기</button>
             </div>
         </div>
     </div>
@@ -167,7 +167,7 @@
 
                 <input type="text" id="storyDescInput" placeholder="스토리 문구 (선택)" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
                 
-                <button onclick="submitNewStory()" class="w-full py-2.5 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-lg transition">스토리 올리기</button>
+                <button id="submitStoryBtn" onclick="submitNewStory()" class="w-full py-2.5 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-lg transition disabled:bg-pink-300 disabled:cursor-not-allowed">스토리 올리기</button>
             </div>
         </div>
     </div>
@@ -208,6 +208,8 @@
         let isAdminUser = false;
         let isSignupView = false;
         let storyTimer = null;
+        let isSubmittingPost = false;
+        let isSubmittingStory = false;
 
         function getDefaultAvatar(sizeClass = "text-base") {
             return `<div class="w-full h-full bg-slate-200 text-slate-400 flex items-center justify-center"><i class="fa-solid fa-user ${sizeClass}"></i></div>`;
@@ -257,7 +259,7 @@
 
                         if (isAdminUser) {
                             adminBtn.classList.remove('hidden');
-                            recoCard.classList.add('hidden'); // admin 계정 시 추천 카드 숨김
+                            recoCard.classList.add('hidden');
                         } else {
                             adminBtn.classList.add('hidden');
                             recoCard.classList.remove('hidden');
@@ -428,7 +430,6 @@
                             `<img src="${post.profile_img}" class="w-full h-full object-cover">` :
                             getDefaultAvatar("text-xs");
 
-                        // 본인 작성글 또는 admin 계정 시 삭제 버튼 표시
                         const canDelete = currentUser && (currentUser === post.username || isAdminUser);
 
                         article.innerHTML = `
@@ -575,38 +576,68 @@
         }
         function closeCreatePostModal() { document.getElementById('createPostModal').classList.add('hidden'); }
 
+        // 🔒 게시글 중복 제출 방지 로직 적용
         async function submitNewPost() {
+            if (isSubmittingPost) return;
+
             const title = document.getElementById('postTitleInput').value.trim();
             const content = document.getElementById('postContentInput').value.trim();
             const fileInput = document.getElementById('postFileInput');
+            const submitBtn = document.getElementById('submitPostBtn');
             let imageUrl = '';
 
             if (!title || !content) { alert('제목과 내용을 입력해 주세요.'); return; }
 
-            if (fileInput.files.length > 0) {
-                const formData = new FormData();
-                formData.append('file', fileInput.files[0]);
-                const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
-                const uploadData = await uploadRes.json();
-                if (uploadData.status === 'success') { imageUrl = uploadData.image_url; }
-                else { alert('사진 업로드 실패: ' + uploadData.message); return; }
-            }
+            // 중복 클릭 잠금
+            isSubmittingPost = true;
+            submitBtn.disabled = true;
+            submitBtn.innerText = '공유 중...';
 
-            fetch('/api/posts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: title, image_url: imageUrl, content: content })
-            })
-            .then(res => res.json())
-            .then(data => {
+            try {
+                if (fileInput.files.length > 0) {
+                    const formData = new FormData();
+                    formData.append('file', fileInput.files[0]);
+                    const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+                    const uploadData = await uploadRes.json();
+                    if (uploadData.status === 'success') {
+                        imageUrl = uploadData.image_url;
+                    } else {
+                        alert('사진 업로드 실패: ' + uploadData.message);
+                        resetPostSubmitState();
+                        return;
+                    }
+                }
+
+                const res = await fetch('/api/posts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: title, image_url: imageUrl, content: content })
+                });
+                const data = await res.json();
+
                 if (data.status === 'success') {
                     closeCreatePostModal();
                     document.getElementById('postTitleInput').value = '';
                     document.getElementById('postFileInput').value = '';
                     document.getElementById('postContentInput').value = '';
                     loadPosts();
+                } else {
+                    alert(data.message || '게시글 등록에 실패했습니다.');
                 }
-            });
+            } catch (err) {
+                alert('요청 중 오류가 발생했습니다.');
+            } finally {
+                resetPostSubmitState();
+            }
+        }
+
+        function resetPostSubmitState() {
+            isSubmittingPost = false;
+            const submitBtn = document.getElementById('submitPostBtn');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = '공유하기';
+            }
         }
 
         function openCreateStoryModal() {
@@ -615,37 +646,62 @@
         }
         function closeCreateStoryModal() { document.getElementById('createStoryModal').classList.add('hidden'); }
 
+        // 🔒 스토리 중복 제출 방지 로직 적용
         async function submitNewStory() {
+            if (isSubmittingStory) return;
+
             const title = document.getElementById('storyTitleInput').value.trim();
             const desc = document.getElementById('storyDescInput').value.trim();
             const fileInput = document.getElementById('storyFileInput');
+            const submitBtn = document.getElementById('submitStoryBtn');
             let imageUrl = '';
 
             if (!title) { alert('스토리 제목을 입력해 주세요.'); return; }
 
-            if (fileInput.files.length > 0) {
-                const formData = new FormData();
-                formData.append('file', fileInput.files[0]);
-                const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
-                const uploadData = await uploadRes.json();
-                if (uploadData.status === 'success') { imageUrl = uploadData.image_url; }
-            }
+            // 중복 클릭 잠금
+            isSubmittingStory = true;
+            submitBtn.disabled = true;
+            submitBtn.innerText = '올리는 중...';
 
-            fetch('/api/stories', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: title, desc: desc, image_url: imageUrl })
-            })
-            .then(res => res.json())
-            .then(data => {
+            try {
+                if (fileInput.files.length > 0) {
+                    const formData = new FormData();
+                    formData.append('file', fileInput.files[0]);
+                    const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+                    const uploadData = await uploadRes.json();
+                    if (uploadData.status === 'success') { imageUrl = uploadData.image_url; }
+                }
+
+                const res = await fetch('/api/stories', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: title, desc: desc, image_url: imageUrl })
+                });
+                const data = await res.json();
+
                 if (data.status === 'success') {
                     closeCreateStoryModal();
                     document.getElementById('storyTitleInput').value = '';
                     document.getElementById('storyFileInput').value = '';
                     document.getElementById('storyDescInput').value = '';
                     loadStories();
+                } else {
+                    alert(data.message || '스토리 등록에 실패했습니다.');
                 }
-            });
+            } catch (err) {
+                alert('요청 중 오류가 발생했습니다.');
+            } finally {
+                resetStorySubmitState();
+            }
+        }
+
+        function resetStorySubmitState() {
+            isSubmittingStory = false;
+            const submitBtn = document.getElementById('submitStoryBtn');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = '스토리 올리기';
+            }
         }
 
         function showStoryModal(el, storyId, username, title, desc, imageUrl, createdAt, profileImg) {

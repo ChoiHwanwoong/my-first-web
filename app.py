@@ -41,12 +41,13 @@ def init_db():
             email VARCHAR(255),
             password VARCHAR(255) NOT NULL,
             profile_img TEXT DEFAULT '',
+            bio VARCHAR(30) DEFAULT '',
             username_updated_at TIMESTAMP
         );
     ''')
 
-    # 기존 DB 호환용 컬럼 추가 예외 처리
     cursor.execute('''
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR(30) DEFAULT '';
         ALTER TABLE users ADD COLUMN IF NOT EXISTS username_updated_at TIMESTAMP;
     ''')
 
@@ -268,7 +269,7 @@ def get_me():
     if 'username' in session:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cursor.execute('SELECT username, name, email, profile_img FROM users WHERE username = %s;', (session['username'],))
+        cursor.execute('SELECT username, name, email, profile_img, bio FROM users WHERE username = %s;', (session['username'],))
         row = cursor.fetchone()
         cursor.close()
         conn.close()
@@ -279,6 +280,7 @@ def get_me():
                 'name': row['username'],
                 'email': row['email'] or '',
                 'profile_img': row['profile_img'] or '',
+                'bio': row['bio'] or '',
                 'is_admin': row['username'] == 'admin'
             })
     return jsonify({'logged_in': False, 'is_admin': False})
@@ -287,7 +289,7 @@ def get_me():
 def get_user_profile(username):
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cursor.execute('SELECT username, name, email, profile_img FROM users WHERE username = %s;', (username,))
+    cursor.execute('SELECT username, name, email, profile_img, bio FROM users WHERE username = %s;', (username,))
     row = cursor.fetchone()
 
     if not row:
@@ -317,11 +319,34 @@ def get_user_profile(username):
             'name': row['username'],
             'email': row['email'] or '',
             'profile_img': row['profile_img'] or '',
+            'bio': row['bio'] or '',
             'follower_count': follower_count,
             'following_count': following_count,
             'is_following': is_following
         }
     })
+
+# 📝 자기소개 (30자 제한) 저장 API
+@app.route('/api/profile-bio', methods=['POST'])
+def update_profile_bio():
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
+
+    data = request.json
+    bio = data.get('bio', '').strip()
+
+    if len(bio) > 30:
+        return jsonify({'status': 'error', 'message': '자기소개는 30글자 이내로 입력해 주세요.'}), 400
+
+    username = session['username']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('UPDATE users SET bio = %s WHERE username = %s;', (bio, username))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'status': 'success', 'bio': bio})
 
 @app.route('/api/profile-image', methods=['POST'])
 def update_profile_image():
@@ -471,7 +496,6 @@ def change_password():
 
     return jsonify({'status': 'success'})
 
-# 🆔 [신규] 30일 제한 아이디 변경 API
 @app.route('/api/change-username', methods=['POST'])
 def change_username():
     if 'username' not in session:
@@ -493,21 +517,18 @@ def change_username():
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-    # 1. 변경 희망 아이디 중복 검사
     cursor.execute('SELECT 1 FROM users WHERE username = %s;', (new_username,))
     if cursor.fetchone():
         cursor.close()
         conn.close()
         return jsonify({'status': 'error', 'message': '이미 다른 사용자가 사용 중인 아이디입니다.'}), 400
 
-    # 2. 30일 제한 확인
     cursor.execute('SELECT username_updated_at FROM users WHERE username = %s;', (current_username,))
     user_row = cursor.fetchone()
     now_kst = get_kst_now()
 
     if user_row and user_row['username_updated_at']:
         last_updated = user_row['username_updated_at']
-        # KST 시각 차이 계산
         if last_updated.tzinfo is None:
             last_updated = last_updated.replace(tzinfo=timezone.utc) + timedelta(hours=9)
         
@@ -521,7 +542,6 @@ def change_username():
                 'message': f'아이디는 30일에 한 번만 변경할 수 있습니다. (다시 변경 가능까지: 약 {remaining_days}일 남음)'
             }), 400
 
-    # 3. 아이디 변경 및 연관 DB 레코드 일괄 업데이트
     try:
         cursor.execute('UPDATE users SET username = %s, name = %s, username_updated_at = %s WHERE username = %s;', (new_username, new_username, now_kst, current_username))
         cursor.execute('UPDATE posts SET username = %s WHERE username = %s;', (new_username, current_username))

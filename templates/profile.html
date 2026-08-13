@@ -62,8 +62,15 @@
                     <div onclick="openFollowListModal('following')" class="cursor-pointer hover:underline">팔로우 <span id="followingCount" class="font-bold">0</span></div>
                 </div>
 
-                <div class="text-xs space-y-1">
-                    <p id="profileEmail" class="text-slate-500"></p>
+                <!-- 📝 자기소개 영역 -->
+                <div class="text-xs space-y-1 mt-1">
+                    <p id="profileEmail" class="text-slate-400 text-[11px]"></p>
+                    <div class="flex items-center justify-center sm:justify-start gap-2">
+                        <p id="profileBio" class="text-slate-800 font-medium whitespace-pre-wrap break-all"></p>
+                        <button id="editBioBtn" onclick="openEditBioModal()" class="hidden text-slate-400 hover:text-blue-500 transition text-[11px] shrink-0" title="자기소개 수정">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -83,6 +90,26 @@
         <div id="myPostsGrid" class="grid grid-cols-3 gap-1 sm:gap-4 mt-2"></div>
 
     </main>
+
+    <!-- 📝 자기소개 수정 모달 (30자 제한) -->
+    <div id="editBioModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
+            <button onclick="closeEditBioModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <h3 class="text-sm font-bold text-center border-b border-slate-100 pb-3 mb-4">자기소개 수정 (30자 이내)</h3>
+
+            <div class="space-y-3 text-xs">
+                <div class="relative">
+                    <textarea id="bioInput" rows="2" maxlength="30" oninput="updateBioCharCount(this)" placeholder="자기소개를 입력해 주세요 (최대 30자)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50 resize-none"></textarea>
+                    <span id="bioCharCount" class="absolute right-2 bottom-2 text-[10px] text-slate-400">0/30</span>
+                </div>
+                
+                <button onclick="submitProfileBio()" class="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition mt-2">저장하기</button>
+            </div>
+        </div>
+    </div>
 
     <!-- ⚙️ 1. 환경설정 모달 -->
     <div id="settingsModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
@@ -113,7 +140,7 @@
         </div>
     </div>
 
-    <!-- 🆔 1-1. 아이디 변경 모달 (30일 제한 안내) -->
+    <!-- 🆔 1-1. 아이디 변경 모달 -->
     <div id="changeUsernameModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
             <button onclick="closeChangeUsernameModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -269,6 +296,7 @@
         let myActiveStory = null;
         let storyTimer = null;
         let currentTab = 'posts';
+        let currentBioText = '';
 
         function getDefaultAvatar(sizeClass = "text-xl") {
             return `<div class="w-full h-full bg-slate-200 text-slate-400 flex items-center justify-center"><i class="fa-solid fa-user ${sizeClass}"></i></div>`;
@@ -332,6 +360,10 @@
             document.getElementById('followerCount').innerText = user.follower_count;
             document.getElementById('followingCount').innerText = user.following_count;
 
+            currentBioText = user.bio || '';
+            const bioEl = document.getElementById('profileBio');
+            bioEl.innerText = currentBioText || (meData.logged_in && meData.username === user.username ? '자기소개를 추가해 보세요.' : '');
+
             const avatarBox = document.getElementById('profileAvatarBox');
             if (user.profile_img) {
                 avatarBox.innerHTML = `<img src="${user.profile_img}" class="w-full h-full object-cover">`;
@@ -342,6 +374,7 @@
             const isMyProfile = meData.logged_in && (meData.username === user.username);
             const actionArea = document.getElementById('profileActionArea');
             const uploadBtn = document.getElementById('profileImageUploadBtn');
+            const editBioBtn = document.getElementById('editBioBtn');
 
             const tabLikesBtn = document.getElementById('tabLikesBtn');
             const tabCommentsBtn = document.getElementById('tabCommentsBtn');
@@ -351,6 +384,8 @@
                 uploadBtn.classList.remove('hidden');
                 uploadBtn.classList.add('flex');
                 uploadBtn.onclick = () => document.getElementById('profileImageInput').click();
+
+                editBioBtn.classList.remove('hidden');
 
                 tabLikesBtn.classList.remove('hidden');
                 tabLikesBtn.classList.add('flex');
@@ -374,6 +409,8 @@
                 uploadBtn.classList.add('hidden');
                 uploadBtn.classList.remove('flex');
 
+                editBioBtn.classList.add('hidden');
+
                 tabLikesBtn.classList.add('hidden');
                 tabLikesBtn.classList.remove('flex');
                 tabCommentsBtn.classList.add('hidden');
@@ -394,6 +431,48 @@
             }
 
             switchTab('posts');
+        }
+
+        // 📝 자기소개 편집 모달 제어
+        function openEditBioModal() {
+            const input = document.getElementById('bioInput');
+            input.value = currentBioText;
+            updateBioCharCount(input);
+            document.getElementById('editBioModal').classList.remove('hidden');
+        }
+
+        function closeEditBioModal() {
+            document.getElementById('editBioModal').classList.add('hidden');
+        }
+
+        function updateBioCharCount(input) {
+            const count = input.value.length;
+            document.getElementById('bioCharCount').innerText = `${count}/30`;
+        }
+
+        function submitProfileBio() {
+            const bio = document.getElementById('bioInput').value.trim();
+
+            if (bio.length > 30) {
+                alert('자기소개는 30자 이내로 작성해 주세요.');
+                return;
+            }
+
+            fetch('/api/profile-bio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bio })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    currentBioText = data.bio;
+                    document.getElementById('profileBio').innerText = data.bio || '자기소개를 추가해 보세요.';
+                    closeEditBioModal();
+                } else {
+                    alert(data.message);
+                }
+            });
         }
 
         function switchTab(tab) {
@@ -535,7 +614,6 @@
         function openSettingsModal() { document.getElementById('settingsModal').classList.remove('hidden'); }
         function closeSettingsModal() { document.getElementById('settingsModal').classList.add('hidden'); }
 
-        // 🆔 아이디 변경 모달 제어
         function openChangeUsernameModal() {
             closeSettingsModal();
             document.getElementById('changeUsernameModal').classList.remove('hidden');

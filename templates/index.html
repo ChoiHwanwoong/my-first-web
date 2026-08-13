@@ -7,6 +7,10 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- ✂️ Cropper.js (이미지 자르기/조절 라이브러리) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
     <style>
         .story-ring { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
         .story-viewed { background: #cbd5e1 !important; }
@@ -100,7 +104,6 @@
                 <p class="text-xs text-slate-500" id="authModalSubtitle">Woongstagram에 로그인하세요.</p>
             </div>
 
-            <!-- 로그인 폼 -->
             <div id="loginFormArea" class="space-y-2.5 text-xs">
                 <input type="text" id="loginUsername" placeholder="사용자 이름 (아이디)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
                 <div class="relative">
@@ -116,7 +119,6 @@
                 </div>
             </div>
 
-            <!-- 회원가입 폼 -->
             <div id="signupFormArea" class="space-y-2.5 text-xs hidden">
                 <input type="text" id="signupUsername" placeholder="사용자 이름 (아이디)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
                 <input type="email" id="signupEmail" placeholder="이메일 주소" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
@@ -131,7 +133,6 @@
                 <button onclick="handleSignupSubmit()" class="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition shadow-sm mt-2">가입하기</button>
             </div>
 
-            <!-- 🔍 아이디 찾기 폼 -->
             <div id="findIdFormArea" class="space-y-2.5 text-xs hidden">
                 <p class="text-[11px] text-slate-500 mb-2">가입 시 등록했던 이메일 주소를 입력해 주세요.</p>
                 <input type="email" id="findIdEmail" placeholder="이메일 주소" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
@@ -139,7 +140,6 @@
                 <div id="findIdResult" class="hidden p-3 bg-slate-50 border border-slate-200 rounded-lg text-center font-bold text-blue-600 text-xs"></div>
             </div>
 
-            <!-- 🔑 비밀번호 재설정 폼 -->
             <div id="resetPwFormArea" class="space-y-2.5 text-xs hidden">
                 <p class="text-[11px] text-slate-500 mb-2">아이디와 등록된 이메일을 입력한 후 새 비밀번호를 설정하세요.</p>
                 <input type="text" id="resetPwUsername" placeholder="사용자 이름 (아이디)" class="w-full px-3 py-2.5 border border-slate-200 rounded-lg outline-none focus:border-slate-400 bg-slate-50">
@@ -175,7 +175,12 @@
                 <input type="text" id="postTitleInput" placeholder="제목" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
                 
                 <div class="border border-slate-200 rounded-lg p-2.5 bg-slate-50 flex items-center justify-between">
-                    <input type="file" id="postFileInput" accept="image/*" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100">
+                    <input type="file" id="postFileInput" accept="image/*" onchange="handleFileSelect(this, 'post')" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100">
+                </div>
+
+                <div id="postCroppedPreviewArea" class="hidden text-center py-2">
+                    <img id="postCroppedPreview" class="max-h-48 mx-auto rounded-lg border border-slate-200 shadow-sm">
+                    <span class="text-[10px] text-green-600 font-bold block mt-1"><i class="fa-solid fa-circle-check"></i> 편집된 사진 적용됨</span>
                 </div>
 
                 <textarea id="postContentInput" rows="3" placeholder="문구 입력..." class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400 resize-none"></textarea>
@@ -217,12 +222,52 @@
                 <input type="text" id="storyTitleInput" placeholder="스토리 제목" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
                 
                 <div class="border border-slate-200 rounded-lg p-2.5 bg-slate-50 flex items-center justify-between">
-                    <input type="file" id="storyFileInput" accept="image/*" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100">
+                    <input type="file" id="storyFileInput" accept="image/*" onchange="handleFileSelect(this, 'story')" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100">
+                </div>
+
+                <div id="storyCroppedPreviewArea" class="hidden text-center py-2">
+                    <img id="storyCroppedPreview" class="max-h-48 mx-auto rounded-lg border border-slate-200 shadow-sm">
+                    <span class="text-[10px] text-green-600 font-bold block mt-1"><i class="fa-solid fa-circle-check"></i> 편집된 스토리 적용됨</span>
                 </div>
 
                 <input type="text" id="storyDescInput" placeholder="스토리 문구 (선택)" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
                 
                 <button id="submitStoryBtn" onclick="submitNewStory()" class="w-full py-2.5 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-lg transition disabled:bg-pink-300 disabled:cursor-not-allowed">스토리 올리기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✂️ 3-1. 이미지 자르기 / 크기 조절 모달 -->
+    <div id="cropperModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b border-slate-100 font-bold text-center text-xs text-slate-900 flex justify-between items-center">
+                <span>사진 편집 (크기/위치 조절)</span>
+                <button onclick="closeCropperModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="p-4 bg-slate-900 flex-1 overflow-hidden flex items-center justify-center max-h-[400px]">
+                <img id="cropperTargetImage" class="max-w-full max-h-full block">
+            </div>
+
+            <!-- 편집 도구 버튼 바 -->
+            <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2">
+                    <button onclick="setAspectRatio(1)" class="px-2.5 py-1 bg-white border border-slate-200 rounded hover:bg-slate-100 font-bold text-[11px]" title="1:1 비율">1:1</button>
+                    <button onclick="setAspectRatio(9/16)" class="px-2.5 py-1 bg-white border border-slate-200 rounded hover:bg-slate-100 font-bold text-[11px]" title="9:16 비율">9:16</button>
+                    <button onclick="setAspectRatio(NaN)" class="px-2.5 py-1 bg-white border border-slate-200 rounded hover:bg-slate-100 font-bold text-[11px]" title="자유 비율">자유</button>
+                </div>
+                
+                <div class="flex items-center gap-2 text-slate-700">
+                    <button onclick="cropperZoom(0.1)" class="p-1.5 bg-white border border-slate-200 rounded hover:bg-slate-100" title="확대"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                    <button onclick="cropperZoom(-0.1)" class="p-1.5 bg-white border border-slate-200 rounded hover:bg-slate-100" title="축소"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                    <button onclick="cropperRotate(-90)" class="p-1.5 bg-white border border-slate-200 rounded hover:bg-slate-100" title="왼쪽 회전"><i class="fa-solid fa-rotate-left"></i></button>
+                    <button onclick="cropperRotate(90)" class="p-1.5 bg-white border border-slate-200 rounded hover:bg-slate-100" title="오른쪽 회전"><i class="fa-solid fa-rotate-right"></i></button>
+                </div>
+            </div>
+
+            <div class="p-3 bg-white border-t border-slate-100 flex gap-2">
+                <button onclick="closeCropperModal()" class="w-1/2 py-2 bg-slate-100 hover:bg-slate-200 font-semibold text-xs rounded-lg transition">취소</button>
+                <button onclick="applyCroppedImage()" class="w-1/2 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs rounded-lg transition">적용하기</button>
             </div>
         </div>
     </div>
@@ -261,10 +306,16 @@
     <script>
         let currentUser = null;
         let isAdminUser = false;
-        let currentAuthView = 'login'; // 'login', 'signup', 'findId', 'resetPw'
+        let currentAuthView = 'login';
         let storyTimer = null;
         let isSubmittingPost = false;
         let isSubmittingStory = false;
+
+        // ✂️ Cropper.js 관련 변수
+        let cropperInstance = null;
+        let currentCropMode = null; // 'post' or 'story'
+        let postCroppedBlob = null;
+        let storyCroppedBlob = null;
 
         function getDefaultAvatar(sizeClass = "text-base") {
             return `<div class="w-full h-full bg-slate-200 text-slate-400 flex items-center justify-center"><i class="fa-solid fa-user ${sizeClass}"></i></div>`;
@@ -296,6 +347,70 @@
             if (diffInDays < 7) return `${diffInDays}일 전`;
             
             return `${past.getFullYear()}년 ${past.getMonth() + 1}월 ${past.getDate()}일`;
+        }
+
+        // ✂️ 이미지 파일 선택 시 Cropper 모달 오픈
+        function handleFileSelect(input, mode) {
+            if (input.files && input.files[0]) {
+                currentCropMode = mode;
+                const file = input.files[0];
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+                    const targetImage = document.getElementById('cropperTargetImage');
+                    targetImage.src = e.target.result;
+                    
+                    document.getElementById('cropperModal').classList.remove('hidden');
+
+                    if (cropperInstance) {
+                        cropperInstance.destroy();
+                    }
+
+                    const initialRatio = mode === 'story' ? 9 / 16 : 1;
+
+                    cropperInstance = new Cropper(targetImage, {
+                        aspectRatio: initialRatio,
+                        viewMode: 1,
+                        autoCropArea: 0.9,
+                        responsive: true
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function setAspectRatio(ratio) { if (cropperInstance) cropperInstance.setAspectRatio(ratio); }
+        function cropperZoom(delta) { if (cropperInstance) cropperInstance.zoom(delta); }
+        function cropperRotate(degree) { if (cropperInstance) cropperInstance.rotate(degree); }
+
+        function closeCropperModal() {
+            document.getElementById('cropperModal').classList.add('hidden');
+            if (cropperInstance) {
+                cropperInstance.destroy();
+                cropperInstance = null;
+            }
+        }
+
+        // ✂️ 자른 결과 적용하기
+        function applyCroppedImage() {
+            if (!cropperInstance) return;
+
+            cropperInstance.getCroppedCanvas({
+                maxWidth: 1200,
+                maxHeight: 1200
+            }).toBlob((blob) => {
+                const previewUrl = URL.createObjectURL(blob);
+                if (currentCropMode === 'post') {
+                    postCroppedBlob = blob;
+                    document.getElementById('postCroppedPreview').src = previewUrl;
+                    document.getElementById('postCroppedPreviewArea').classList.remove('hidden');
+                } else if (currentCropMode === 'story') {
+                    storyCroppedBlob = blob;
+                    document.getElementById('storyCroppedPreview').src = previewUrl;
+                    document.getElementById('storyCroppedPreviewArea').classList.remove('hidden');
+                }
+                closeCropperModal();
+            }, 'image/jpeg', 0.9);
         }
 
         function checkLoginStatus() {
@@ -668,7 +783,11 @@
             if (!currentUser) { alert('로그인이 필요합니다.'); openAuthModal(); return; }
             document.getElementById('createPostModal').classList.remove('hidden');
         }
-        function closeCreatePostModal() { document.getElementById('createPostModal').classList.add('hidden'); }
+        function closeCreatePostModal() {
+            document.getElementById('createPostModal').classList.add('hidden');
+            postCroppedBlob = null;
+            document.getElementById('postCroppedPreviewArea').classList.add('hidden');
+        }
 
         async function submitNewPost() {
             if (isSubmittingPost) return;
@@ -686,18 +805,19 @@
             submitBtn.innerText = '공유 중...';
 
             try {
-                if (fileInput.files.length > 0) {
+                // 편집된 바이트(Blob) 데이터 우선 전송
+                if (postCroppedBlob) {
+                    const formData = new FormData();
+                    formData.append('file', postCroppedBlob, 'cropped_post.jpg');
+                    const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+                    const uploadData = await uploadRes.json();
+                    if (uploadData.status === 'success') imageUrl = uploadData.image_url;
+                } else if (fileInput.files.length > 0) {
                     const formData = new FormData();
                     formData.append('file', fileInput.files[0]);
                     const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
                     const uploadData = await uploadRes.json();
-                    if (uploadData.status === 'success') {
-                        imageUrl = uploadData.image_url;
-                    } else {
-                        alert('사진 업로드 실패: ' + uploadData.message);
-                        resetPostSubmitState();
-                        return;
-                    }
+                    if (uploadData.status === 'success') imageUrl = uploadData.image_url;
                 }
 
                 const res = await fetch('/api/posts', {
@@ -736,7 +856,11 @@
             if (!currentUser) { alert('로그인이 필요합니다.'); openAuthModal(); return; }
             document.getElementById('createStoryModal').classList.remove('hidden');
         }
-        function closeCreateStoryModal() { document.getElementById('createStoryModal').classList.add('hidden'); }
+        function closeCreateStoryModal() {
+            document.getElementById('createStoryModal').classList.add('hidden');
+            storyCroppedBlob = null;
+            document.getElementById('storyCroppedPreviewArea').classList.add('hidden');
+        }
 
         async function submitNewStory() {
             if (isSubmittingStory) return;
@@ -754,12 +878,18 @@
             submitBtn.innerText = '올리는 중...';
 
             try {
-                if (fileInput.files.length > 0) {
+                if (storyCroppedBlob) {
+                    const formData = new FormData();
+                    formData.append('file', storyCroppedBlob, 'cropped_story.jpg');
+                    const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+                    const uploadData = await uploadRes.json();
+                    if (uploadData.status === 'success') imageUrl = uploadData.image_url;
+                } else if (fileInput.files.length > 0) {
                     const formData = new FormData();
                     formData.append('file', fileInput.files[0]);
                     const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
                     const uploadData = await uploadRes.json();
-                    if (uploadData.status === 'success') { imageUrl = uploadData.image_url; }
+                    if (uploadData.status === 'success') imageUrl = uploadData.image_url;
                 }
 
                 const res = await fetch('/api/stories', {
@@ -851,7 +981,6 @@
         function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); switchAuthView('login'); }
         function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
 
-        // 🔄 모달 폼 화면 전환 제어 함수
         function switchAuthView(view) {
             currentAuthView = view;
             const subtitle = document.getElementById('authModalSubtitle');
@@ -944,7 +1073,6 @@
             });
         }
 
-        // 🔍 아이디 찾기 요청 처리
         function handleFindIdSubmit() {
             const email = document.getElementById('findIdEmail').value.trim();
             if (!email) { alert('이메일을 입력해 주세요.'); return; }
@@ -967,7 +1095,6 @@
             });
         }
 
-        // 🔑 비밀번호 재설정 요청 처리
         function handleResetPwSubmit() {
             const username = document.getElementById('resetPwUsername').value.trim();
             const email = document.getElementById('resetPwEmail').value.trim();

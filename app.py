@@ -14,7 +14,6 @@ app.secret_key = 'super_secret_key_for_woongstagram_app'
 DEFAULT_DB_URL = "postgresql://neondb_owner:YOUR_PASSWORD@ep-xyz.region.aws.neon.tech/neondb?sslmode=require"
 DATABASE_URL = os.environ.get('DATABASE_URL', DEFAULT_DB_URL)
 
-# ☁️ Cloudinary 설정 (CLOUDINARY_URL 환경변수 자동 감지)
 cloudinary.config(secure=True)
 
 NEWS_CACHE = {
@@ -314,7 +313,6 @@ def get_user_profile(username):
         }
     })
 
-# ☁️ 프로필 이미지 Cloudinary 업로드
 @app.route('/api/profile-image', methods=['POST'])
 def update_profile_image():
     if 'username' not in session:
@@ -386,6 +384,55 @@ def login():
         return jsonify({'status': 'success', 'username': user['username']})
     return jsonify({'status': 'error', 'message': '아이디 또는 비밀번호가 올바르지 않습니다.'}), 400
 
+# 🔍 아이디 찾기 API
+@app.route('/api/find-id', methods=['POST'])
+def find_id():
+    data = request.json
+    email = data.get('email', '').strip()
+
+    if not email:
+        return jsonify({'status': 'error', 'message': '이메일 주소를 입력해 주세요.'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor.execute('SELECT username FROM users WHERE email = %s;', (email,))
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    if rows:
+        usernames = [r['username'] for r in rows]
+        return jsonify({'status': 'success', 'usernames': usernames})
+    return jsonify({'status': 'error', 'message': '해당 이메일로 가입된 계정을 찾을 수 없습니다.'}), 44
+
+# 🔑 비밀번호 재설정 API
+@app.route('/api/reset-password', methods=['POST'])
+def reset_password():
+    data = request.json
+    username = data.get('username', '').strip()
+    email = data.get('email', '').strip()
+    new_password = data.get('new_password', '').strip()
+
+    if not username or not email or not new_password:
+        return jsonify({'status': 'error', 'message': '모든 필수 항목을 입력해 주세요.'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM users WHERE username = %s AND email = %s;', (username, email))
+    user = cursor.fetchone()
+
+    if not user:
+        cursor.close()
+        conn.close()
+        return jsonify({'status': 'error', 'message': '아이디와 이메일 정보가 일치하는 계정이 없습니다.'}), 404
+
+    cursor.execute('UPDATE users SET password = %s WHERE username = %s AND email = %s;', (new_password, username, email))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'status': 'success'})
+
 @app.route('/api/logout', methods=['POST'])
 def logout():
     session.clear()
@@ -443,7 +490,7 @@ def get_following(username):
     conn.close()
     return jsonify({'status': 'success', 'users': [r[0] for r in rows]})
 
-# ☁️ 게시글 및 스토리 이미지 Cloudinary 업로드 API
+# ☁️ 업로드 API
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     if 'username' not in session:

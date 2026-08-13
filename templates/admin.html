@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 대시보드 • Woongstagram</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen flex flex-col justify-between">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-200 bg-white sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="/" class="text-2xl font-black tracking-tight italic font-serif text-slate-900 select-none">
+                    Woongstagram
+                </a>
+                <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">ADMIN</span>
+            </div>
+
+            <div class="flex items-center gap-5 text-sm font-bold text-slate-700">
+                <a href="/" class="hover:text-blue-500 transition"><i class="fa-solid fa-house mr-1"></i> 메인으로</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Section -->
+    <main class="max-w-6xl mx-auto px-4 py-8 w-full flex-1 space-y-8">
+        
+        <!-- Stats Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-400 font-semibold mb-1">총 회원 수</p>
+                    <h3 id="statUsers" class="text-2xl font-bold text-slate-900">0</h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-400 font-semibold mb-1">총 게시글</p>
+                    <h3 id="statPosts" class="text-2xl font-bold text-slate-900">0</h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-square-plus"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-400 font-semibold mb-1">총 댓글</p>
+                    <h3 id="statComments" class="text-2xl font-bold text-slate-900">0</h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-500 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-comments"></i>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-400 font-semibold mb-1">활성 스토리</p>
+                    <h3 id="statStories" class="text-2xl font-bold text-slate-900">0</h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-pink-50 text-pink-500 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-circle-notch"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Management Tables Area -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <!-- Tabs Header -->
+            <div class="flex border-b border-slate-200 bg-slate-50/50 text-xs font-bold text-slate-600">
+                <button onclick="switchTab('users')" id="tabBtn-users" class="px-6 py-3.5 border-b-2 border-slate-900 text-slate-900 bg-white">회원 관리</button>
+                <button onclick="switchTab('posts')" id="tabBtn-posts" class="px-6 py-3.5 border-b-2 border-transparent hover:text-slate-900">게시글 관리</button>
+                <button onclick="switchTab('stories')" id="tabBtn-stories" class="px-6 py-3.5 border-b-2 border-transparent hover:text-slate-900">스토리 관리</button>
+            </div>
+
+            <!-- Tab 1: Users Table -->
+            <div id="tabContent-users" class="p-6 space-y-4">
+                <h4 class="text-sm font-bold text-slate-900">가입 회원 목록</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left border-collapse">
+                        <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 uppercase font-semibold">
+                            <tr>
+                                <th class="p-3">ID</th>
+                                <th class="p-3">프로필</th>
+                                <th class="p-3">사용자 아이디</th>
+                                <th class="p-3">이메일</th>
+                                <th class="p-3 text-right">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab 2: Posts Table -->
+            <div id="tabContent-posts" class="p-6 space-y-4 hidden">
+                <h4 class="text-sm font-bold text-slate-900">전체 게시글 목록</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left border-collapse">
+                        <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 uppercase font-semibold">
+                            <tr>
+                                <th class="p-3">ID</th>
+                                <th class="p-3">작성자</th>
+                                <th class="p-3">제목</th>
+                                <th class="p-3">내용</th>
+                                <th class="p-3">좋아요</th>
+                                <th class="p-3">작성일</th>
+                                <th class="p-3 text-right">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="postTableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab 3: Stories Table -->
+            <div id="tabContent-stories" class="p-6 space-y-4 hidden">
+                <h4 class="text-sm font-bold text-slate-900">활성 스토리 목록 (24시간)</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left border-collapse">
+                        <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 uppercase font-semibold">
+                            <tr>
+                                <th class="p-3">ID</th>
+                                <th class="p-3">작성자</th>
+                                <th class="p-3">스토리 제목</th>
+                                <th class="p-3">문구</th>
+                                <th class="p-3">작성일</th>
+                                <th class="p-3 text-right">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="storyTableBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="border-t border-slate-200 py-6 text-center text-slate-400 text-xs bg-white">
+        <p>© 2026 WOONGSTAGRAM ADMIN DASHBOARD</p>
+    </footer>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            loadStats();
+            loadUsers();
+            loadPosts();
+            loadStories();
+        });
+
+        function switchTab(tabName) {
+            ['users', 'posts', 'stories'].forEach(t => {
+                const btn = document.getElementById(`tabBtn-${t}`);
+                const content = document.getElementById(`tabContent-${t}`);
+                if (t === tabName) {
+                    btn.className = "px-6 py-3.5 border-b-2 border-slate-900 text-slate-900 bg-white font-bold";
+                    content.classList.remove('hidden');
+                } else {
+                    btn.className = "px-6 py-3.5 border-b-2 border-transparent hover:text-slate-900 font-bold";
+                    content.classList.add('hidden');
+                }
+            });
+        }
+
+        function loadStats() {
+            fetch('/api/admin/stats')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('statUsers').innerText = data.stats.users;
+                        document.getElementById('statPosts').innerText = data.stats.posts;
+                        document.getElementById('statComments').innerText = data.stats.comments;
+                        document.getElementById('statStories').innerText = data.stats.stories;
+                    }
+                });
+        }
+
+        function loadUsers() {
+            fetch('/api/admin/users')
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.getElementById('userTableBody');
+                    tbody.innerHTML = '';
+                    if (data.status === 'success') {
+                        data.users.forEach(u => {
+                            const tr = document.createElement('tr');
+                            const imgHtml = u.profile_img ? `<img src="${u.profile_img}" class="w-7 h-7 rounded-full object-cover">` : `<div class="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-[10px] text-slate-400"><i class="fa-solid fa-user"></i></div>`;
+                            tr.innerHTML = `
+                                <td class="p-3 font-mono">${u.id}</td>
+                                <td class="p-3">${imgHtml}</td>
+                                <td class="p-3 font-bold text-slate-900">@${u.username}</td>
+                                <td class="p-3 text-slate-500">${u.email}</td>
+                                <td class="p-3 text-right">
+                                    ${u.username !== 'admin' ? `
+                                        <button onclick="deleteUser('${u.username}')" class="px-2.5 py-1 bg-red-50 text-red-600 hover:bg-red-100 rounded font-semibold transition">
+                                            강제 탈퇴
+                                        </button>
+                                    ` : '<span class="text-slate-400 font-semibold">최고 관리자</span>'}
+                                </td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    }
+                });
+        }
+
+        function loadPosts() {
+            fetch('/api/posts')
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.getElementById('postTableBody');
+                    tbody.innerHTML = '';
+                    if (data.status === 'success') {
+                        data.posts.forEach(p => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td class="p-3 font-mono">${p.id}</td>
+                                <td class="p-3 font-bold text-slate-900">@${p.username}</td>
+                                <td class="p-3 font-semibold">${escapeHtml(p.title)}</td>
+                                <td class="p-3 text-slate-500 truncate max-w-xs">${escapeHtml(p.content)}</td>
+                                <td class="p-3 font-bold text-slate-700">${p.likes}개</td>
+                                <td class="p-3 text-slate-400">${p.created_at}</td>
+                                <td class="p-3 text-right">
+                                    <button onclick="deletePost(${p.id})" class="px-2.5 py-1 bg-red-50 text-red-600 hover:bg-red-100 rounded font-semibold transition">
+                                        삭제
+                                    </button>
+                                </td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    }
+                });
+        }
+
+        function loadStories() {
+            fetch('/api/stories')
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.getElementById('storyTableBody');
+                    tbody.innerHTML = '';
+                    if (data.status === 'success') {
+                        data.stories.forEach(s => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td class="p-3 font-mono">${s.id}</td>
+                                <td class="p-3 font-bold text-slate-900">@${s.username}</td>
+                                <td class="p-3 font-semibold">${escapeHtml(s.title)}</td>
+                                <td class="p-3 text-slate-500 truncate max-w-xs">${escapeHtml(s.desc)}</td>
+                                <td class="p-3 text-slate-400">${s.created_at}</td>
+                                <td class="p-3 text-right">
+                                    <button onclick="deleteStory(${s.id})" class="px-2.5 py-1 bg-red-50 text-red-600 hover:bg-red-100 rounded font-semibold transition">
+                                        삭제
+                                    </button>
+                                </td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    }
+                });
+        }
+
+        function deleteUser(username) {
+            if (!confirm(`정말로 @${username} 회원을 탈퇴 처리하시겠습니까?\n작성한 글과 스토리도 모두 함께 삭제됩니다.`)) return;
+            fetch(`/api/admin/users/${username}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        loadStats(); loadUsers(); loadPosts(); loadStories();
+                    } else alert(data.message);
+                });
+        }
+
+        function deletePost(postId) {
+            if (!confirm('이 게시글을 삭제하시겠습니까?')) return;
+            fetch(`/api/admin/posts/${postId}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') { loadStats(); loadPosts(); }
+                });
+        }
+
+        function deleteStory(storyId) {
+            if (!confirm('이 스토리를 삭제하시겠습니까?')) return;
+            fetch(`/api/admin/stories/${storyId}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') { loadStats(); loadStories(); }
+                });
+        }
+
+        function escapeHtml(text) { return text ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : ''; }
+    </script>
+</body>
+</html>

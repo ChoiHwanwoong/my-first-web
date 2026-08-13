@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, jsonify, session
 import sqlite3
 import os
-import feedparser
+import urllib.request
+import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 
@@ -13,7 +14,6 @@ UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# --- 📰 뉴스 캐싱 변수 (6시간 주기) ---
 NEWS_CACHE = {
     'updated_at': None,
     'articles': []
@@ -103,6 +103,10 @@ def init_db():
 
 init_db()
 
+# --- 👑 Admin 세션 검증 헬퍼 함수 ---
+def is_admin():
+    return session.get('username') == 'admin'
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -112,28 +116,132 @@ def index():
 def profile_page(username=None):
     return render_template('profile.html', target_username=username)
 
+# 관리자 페이지 라우트
+@app.route('/admin')
+def admin_page():
+    if not is_admin():
+        return "<script>alert('관리자 권한이 필요합니다.'); location.href='/';</script>"
+    return render_template('admin.html')
+
+# --- 👑 Admin APIs ---
+@app.route('/api/admin/stats', methods=['GET'])
+def get_admin_stats():
+    if not is_admin():
+        return jsonify({'status': 'error', 'message': '권한이 없습니다.'}), 403
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT COUNT(*) FROM users')
+    user_cnt = cursor.fetchone()[0]
+
+    cursor.execute('SELECT COUNT(*) FROM posts')
+    post_cnt = cursor.fetchone()[0]
+
+    cursor.execute('SELECT COUNT(*) FROM comments')
+    comment_cnt = cursor.fetchone()[0]
+
+    cutoff_time = (datetime.now() - timedelta(hours=24)).strftime('%Y-%m-%d %H:%M:%S')
+    cursor.execute('SELECT COUNT(*) FROM stories WHERE created_at >= ?', (cutoff_time,))
+    story_cnt = cursor.fetchone()[0]
+
+    conn.close()
+    return jsonify({
+        'status': 'success',
+        'stats': {
+            'users': user_cnt,
+            'posts': post_cnt,
+            'comments': comment_cnt,
+            'stories': story_cnt
+        }
+    })
+
+@app.route('/api/admin/users', methods=['GET'])
+def get_admin_users():
+    if not is_admin():
+        return jsonify({'status': 'error', 'message': '권한이 없습니다.'}), 403
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, username, email, profile_img FROM users ORDER BY id DESC')
+    rows = cursor.fetchall()
+    conn.close()
+
+    users = [{'id': r[0], 'username': r[1], 'email': r[2], 'profile_img': r[3] or ''} for r in rows]
+    return jsonify({'status': 'success', 'users': users})
+
+@app.route('/api/admin/users/<username>', methods=['DELETE'])
+def delete_admin_user(username):
+    if not is_admin():
+        return jsonify({'status': 'error', 'message': '권한이 없습니다.'}), 403
+
+    if username == 'admin':
+        return jsonify({'status': 'error', 'message': '관리자 계정은 삭제할 수 없습니다.'}), 400
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM users WHERE username = ?', (username,))
+    cursor.execute('DELETE FROM posts WHERE username = ?', (username,))
+    cursor.execute('DELETE FROM comments WHERE username = ?', (username,))
+    cursor.execute('DELETE FROM stories WHERE username = ?', (username,))
+    cursor.execute('DELETE FROM follows WHERE follower = ? OR following = ?', (username, username))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'status': 'success'})
+
+@app.route('/api/admin/posts/<int:post_id>', methods=['DELETE'])
+def delete_admin_post(post_id):
+    if not is_admin():
+        return jsonify({'status': 'error', 'message': '권한이 없습니다.'}), 403
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM posts WHERE id = ?', (post_id,))
+    cursor.execute('DELETE FROM comments WHERE post_id = ?', (post_id,))
+    cursor.execute('DELETE FROM post_likes WHERE post_id = ?', (post_id,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'status': 'success'})
+
+@app.route('/api/admin/stories/<int:story_id>', methods=['DELETE'])
+def delete_admin_story(story_id):
+    if not is_admin():
+        return jsonify({'status': 'error', 'message': '권한이 없습니다.'}), 403
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM stories WHERE id = ?', (story_id,))
+    cursor.execute('DELETE FROM story_views WHERE story_id = ?', (story_id,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'status': 'success'})
+
 # --- 📰 1시간 주기 뉴스 API ---
 @app.route('/api/news', methods=['GET'])
 def get_hot_news():
     now = datetime.now()
     
-    # 1시간 캐시 검증
     if NEWS_CACHE['updated_at'] and (now - NEWS_CACHE['updated_at']) < timedelta(hours=1):
         return jsonify({'status': 'success', 'articles': NEWS_CACHE['articles'], 'cached': True})
 
-    # RSS 피드를 통한 뉴스 수집 (다음/구글 뉴스 핫이슈)
-    rss_url = 'https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko'
-    feed = feedparser.parse(rss_url)
-
     articles = []
-    for entry in feed.entries[:5]: # 상위 5개 주요 뉴스
-        articles.append({
-            'title': entry.title,
-            'link': entry.link,
-            'pubDate': entry.get('published', '')
-        })
+    try:
+        rss_url = 'https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko'
+        req = urllib.request.Request(rss_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req) as response:
+            xml_data = response.read()
+            root = ET.fromstring(xml_data)
+            
+            for item in root.findall('./channel/item')[:5]:
+                title = item.find('title').text if item.find('title') is not None else ''
+                link = item.find('link').text if item.find('link') is not None else '#'
+                articles.append({'title': title, 'link': link})
+    except Exception as e:
+        print("RSS Error:", e)
 
-    # 캐시 저장
     NEWS_CACHE['updated_at'] = now
     NEWS_CACHE['articles'] = articles
 
@@ -152,11 +260,12 @@ def get_me():
             return jsonify({
                 'logged_in': True,
                 'username': row[0],
-                'name': row[1] or row[0],
+                'name': row[0],
                 'email': row[2] or '',
-                'profile_img': row[3] or ''
+                'profile_img': row[3] or '',
+                'is_admin': row[0] == 'admin'
             })
-    return jsonify({'logged_in': False})
+    return jsonify({'logged_in': False, 'is_admin': False})
 
 @app.route('/api/users/<username>', methods=['GET'])
 def get_user_profile(username):
@@ -187,7 +296,7 @@ def get_user_profile(username):
         'status': 'success',
         'user': {
             'username': row[0],
-            'name': row[1] or row[0],
+            'name': row[0],
             'email': row[2] or '',
             'profile_img': row[3] or '',
             'follower_count': follower_count,
@@ -227,7 +336,6 @@ def update_profile_image():
 def signup():
     data = request.json
     username = data.get('username', '').strip()
-    name = data.get('name', '').strip()
     email = data.get('email', '').strip()
     password = data.get('password', '').strip()
 
@@ -238,11 +346,11 @@ def signup():
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute('INSERT INTO users (username, name, email, password) VALUES (?, ?, ?, ?)', 
-                       (username, name or username, email, password))
+                       (username, username, email, password))
         conn.commit()
         conn.close()
         session['username'] = username
-        session['name'] = name or username
+        session['name'] = username
         return jsonify({'status': 'success', 'username': username})
     except sqlite3.IntegrityError:
         return jsonify({'status': 'error', 'message': '이미 사용 중인 아이디입니다.'}), 400
@@ -261,7 +369,7 @@ def login():
 
     if user:
         session['username'] = user[0]
-        session['name'] = user[1] or user[0]
+        session['name'] = user[0]
         return jsonify({'status': 'success', 'username': user[0]})
     return jsonify({'status': 'error', 'message': '아이디 또는 비밀번호가 올바르지 않습니다.'}), 400
 
@@ -646,7 +754,8 @@ def delete_comment(comment_id):
     cursor.execute('SELECT username FROM comments WHERE id = ?', (comment_id,))
     row = cursor.fetchone()
 
-    if not row or row[0] != session['username']:
+    # 관리자는 다른 사람의 댓글도 자유롭게 삭제 가능
+    if not is_admin() and (not row or row[0] != session['username']):
         conn.close()
         return jsonify({'status': 'error', 'message': '권한이 없습니다.'}), 403
 

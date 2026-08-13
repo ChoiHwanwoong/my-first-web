@@ -5,7 +5,8 @@ import os
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
-from werkzeug.utils import secure_filename
+import cloudinary
+import cloudinary.uploader
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_for_woongstagram_app'
@@ -13,9 +14,8 @@ app.secret_key = 'super_secret_key_for_woongstagram_app'
 DEFAULT_DB_URL = "postgresql://neondb_owner:YOUR_PASSWORD@ep-xyz.region.aws.neon.tech/neondb?sslmode=require"
 DATABASE_URL = os.environ.get('DATABASE_URL', DEFAULT_DB_URL)
 
-UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# ☁️ Cloudinary 설정 (CLOUDINARY_URL 환경변수 자동 감지)
+cloudinary.config(secure=True)
 
 NEWS_CACHE = {
     'updated_at': None,
@@ -30,7 +30,6 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # 1. 사용자 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
@@ -42,7 +41,6 @@ def init_db():
         );
     ''')
 
-    # 2. 게시글 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS posts (
             id SERIAL PRIMARY KEY,
@@ -55,7 +53,6 @@ def init_db():
         );
     ''')
 
-    # 3. 댓글 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS comments (
             id SERIAL PRIMARY KEY,
@@ -66,7 +63,6 @@ def init_db():
         );
     ''')
 
-    # 4. 좋아요 기록 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS post_likes (
             id SERIAL PRIMARY KEY,
@@ -76,7 +72,6 @@ def init_db():
         );
     ''')
 
-    # 5. 스토리 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS stories (
             id SERIAL PRIMARY KEY,
@@ -88,7 +83,6 @@ def init_db():
         );
     ''')
 
-    # 6. 스토리 읽음 기록 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS story_views (
             id SERIAL PRIMARY KEY,
@@ -98,7 +92,6 @@ def init_db():
         );
     ''')
 
-    # 7. 팔로우 테이블
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS follows (
             id SERIAL PRIMARY KEY,
@@ -321,6 +314,7 @@ def get_user_profile(username):
         }
     })
 
+# ☁️ 프로필 이미지 Cloudinary 업로드
 @app.route('/api/profile-image', methods=['POST'])
 def update_profile_image():
     if 'username' not in session:
@@ -334,20 +328,20 @@ def update_profile_image():
         return jsonify({'status': 'error', 'message': '선택된 파일이 없습니다.'}), 400
 
     if file:
-        filename = secure_filename(file.filename)
-        save_filename = f"profile_{session['username']}_{int(datetime.now().timestamp())}_{filename}"
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], save_filename)
-        file.save(filepath)
-        image_url = f"/static/uploads/{save_filename}"
+        try:
+            upload_result = cloudinary.uploader.upload(file, folder="woongstagram/profiles")
+            image_url = upload_result.get('secure_url')
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('UPDATE users SET profile_img = %s WHERE username = %s;', (image_url, session['username']))
-        conn.commit()
-        cursor.close()
-        conn.close()
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute('UPDATE users SET profile_img = %s WHERE username = %s;', (image_url, session['username']))
+            conn.commit()
+            cursor.close()
+            conn.close()
 
-        return jsonify({'status': 'success', 'profile_img': image_url})
+            return jsonify({'status': 'success', 'profile_img': image_url})
+        except Exception as e:
+            return jsonify({'status': 'error', 'message': f'이미지 업로드 실패: {str(e)}'}), 500
 
 @app.route('/api/signup', methods=['POST'])
 def signup():
@@ -449,7 +443,7 @@ def get_following(username):
     conn.close()
     return jsonify({'status': 'success', 'users': [r[0] for r in rows]})
 
-# --- 📁 Upload API ---
+# ☁️ 게시글 및 스토리 이미지 Cloudinary 업로드 API
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     if 'username' not in session:
@@ -463,12 +457,12 @@ def upload_file():
         return jsonify({'status': 'error', 'message': '선택된 파일이 없습니다.'}), 400
 
     if file:
-        filename = secure_filename(file.filename)
-        save_filename = f"{session['username']}_{int(datetime.now().timestamp())}_{filename}"
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], save_filename)
-        file.save(filepath)
-        image_url = f"/static/uploads/{save_filename}"
-        return jsonify({'status': 'success', 'image_url': image_url})
+        try:
+            upload_result = cloudinary.uploader.upload(file, folder="woongstagram/posts")
+            image_url = upload_result.get('secure_url')
+            return jsonify({'status': 'success', 'image_url': image_url})
+        except Exception as e:
+            return jsonify({'status': 'error', 'message': f'클라우드 업로드 실패: {str(e)}'}), 500
 
 # --- 🤖 Recommendation API ---
 @app.route('/api/recommendations', methods=['GET'])
@@ -705,7 +699,6 @@ def get_single_post(post_id):
         }
     })
 
-# ✏️ 게시글 수정 API
 @app.route('/api/posts/<int:post_id>', methods=['PUT'])
 def update_user_post(post_id):
     if 'username' not in session:

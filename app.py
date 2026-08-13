@@ -384,7 +384,6 @@ def login():
         return jsonify({'status': 'success', 'username': user['username']})
     return jsonify({'status': 'error', 'message': '아이디 또는 비밀번호가 올바르지 않습니다.'}), 400
 
-# 🔍 아이디 찾기 API
 @app.route('/api/find-id', methods=['POST'])
 def find_id():
     data = request.json
@@ -403,9 +402,8 @@ def find_id():
     if rows:
         usernames = [r['username'] for r in rows]
         return jsonify({'status': 'success', 'usernames': usernames})
-    return jsonify({'status': 'error', 'message': '해당 이메일로 가입된 계정을 찾을 수 없습니다.'}), 44
+    return jsonify({'status': 'error', 'message': '해당 이메일로 가입된 계정을 찾을 수 없습니다.'}), 404
 
-# 🔑 비밀번호 재설정 API
 @app.route('/api/reset-password', methods=['POST'])
 def reset_password():
     data = request.json
@@ -430,6 +428,79 @@ def reset_password():
     conn.commit()
     cursor.close()
     conn.close()
+
+    return jsonify({'status': 'success'})
+
+# 🔑 환경설정 비밀번호 변경 API
+@app.route('/api/change-password', methods=['POST'])
+def change_password():
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
+
+    data = request.json
+    current_password = data.get('current_password', '').strip()
+    new_password = data.get('new_password', '').strip()
+
+    if not current_password or not new_password:
+        return jsonify({'status': 'error', 'message': '현재 비밀번호와 새 비밀번호를 모두 입력해 주세요.'}), 400
+
+    username = session['username']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM users WHERE username = %s AND password = %s;', (username, current_password))
+    user = cursor.fetchone()
+
+    if not user:
+        cursor.close()
+        conn.close()
+        return jsonify({'status': 'error', 'message': '현재 비밀번호가 올바르지 않습니다.'}), 400
+
+    cursor.execute('UPDATE users SET password = %s WHERE username = %s;', (new_password, username))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'status': 'success'})
+
+# 🚨 본인 회원 탈퇴 API
+@app.route('/api/delete-account', methods=['POST'])
+def delete_account():
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
+
+    username = session['username']
+    if username == 'admin':
+        return jsonify({'status': 'error', 'message': '관리자 계정은 서비스 안전을 위해 스스로 탈퇴할 수 없습니다.'}), 400
+
+    data = request.json
+    password = data.get('password', '').strip()
+
+    if not password:
+        return jsonify({'status': 'error', 'message': '비밀번호를 입력해 주세요.'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM users WHERE username = %s AND password = %s;', (username, password))
+    user = cursor.fetchone()
+
+    if not user:
+        cursor.close()
+        conn.close()
+        return jsonify({'status': 'error', 'message': '비밀번호가 올바르지 않습니다.'}), 400
+
+    # 유저 관련 DB 레코드 일괄 삭제
+    cursor.execute('DELETE FROM users WHERE username = %s;', (username,))
+    cursor.execute('DELETE FROM posts WHERE username = %s;', (username,))
+    cursor.execute('DELETE FROM comments WHERE username = %s;', (username,))
+    cursor.execute('DELETE FROM stories WHERE username = %s;', (username,))
+    cursor.execute('DELETE FROM follows WHERE follower = %s OR following = %s;', (username, username))
+    cursor.execute('DELETE FROM post_likes WHERE username = %s;', (username,))
+    cursor.execute('DELETE FROM story_views WHERE username = %s;', (username,))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+    session.clear()
 
     return jsonify({'status': 'success'})
 

@@ -5,7 +5,7 @@ import os
 import json
 import urllib.request
 import xml.etree.ElementTree as ET
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import cloudinary
 import cloudinary.uploader
 
@@ -15,12 +15,17 @@ app.secret_key = 'super_secret_key_for_woongstagram_app'
 DEFAULT_DB_URL = "postgresql://neondb_owner:YOUR_PASSWORD@ep-xyz.region.aws.neon.tech/neondb?sslmode=require"
 DATABASE_URL = os.environ.get('DATABASE_URL', DEFAULT_DB_URL)
 
+# ☁️ Cloudinary 설정
 cloudinary.config(secure=True)
 
 NEWS_CACHE = {
     'updated_at': None,
     'articles': []
 }
+
+# 🇰🇷 한국 표준시(KST = UTC + 9시간) 계산 함수
+def get_kst_now():
+    return datetime.now(timezone.utc) + timedelta(hours=9)
 
 def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL)
@@ -142,7 +147,7 @@ def get_admin_stats():
     cursor.execute('SELECT COUNT(*) FROM comments;')
     comment_cnt = cursor.fetchone()[0]
 
-    cutoff_time = datetime.now() - timedelta(hours=24)
+    cutoff_time = get_kst_now() - timedelta(hours=24)
     cursor.execute('SELECT COUNT(*) FROM stories WHERE created_at >= %s;', (cutoff_time,))
     story_cnt = cursor.fetchone()[0]
 
@@ -228,7 +233,7 @@ def delete_admin_story(story_id):
 # --- 📰 1시간 주기 뉴스 API ---
 @app.route('/api/news', methods=['GET'])
 def get_hot_news():
-    now = datetime.now()
+    now = get_kst_now()
     
     if NEWS_CACHE['updated_at'] and (now - NEWS_CACHE['updated_at']) < timedelta(hours=1):
         return jsonify({'status': 'success', 'articles': NEWS_CACHE['articles'], 'cached': True})
@@ -653,7 +658,7 @@ def get_stories():
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-    cutoff_time = datetime.now() - timedelta(hours=24)
+    cutoff_time = get_kst_now() - timedelta(hours=24)
     cursor.execute('DELETE FROM stories WHERE created_at < %s;', (cutoff_time,))
     conn.commit()
 
@@ -684,6 +689,7 @@ def get_stories():
     conn.close()
     return jsonify({'status': 'success', 'stories': stories})
 
+# 📸 스토리 생성 (한국 시각 KST 저장)
 @app.route('/api/stories', methods=['POST'])
 def create_story():
     if 'username' not in session:
@@ -698,11 +704,12 @@ def create_story():
         return jsonify({'status': 'error', 'message': '스토리 내용이나 사진을 등록해 주세요.'}), 400
 
     username = session['username']
+    now_kst = get_kst_now()
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO stories (username, title, desc_text, image_url) VALUES (%s, %s, %s, %s);', 
-                   (username, title, desc, image_url))
+    cursor.execute('INSERT INTO stories (username, title, desc_text, image_url, created_at) VALUES (%s, %s, %s, %s, %s);', 
+                   (username, title, desc, image_url, now_kst))
     conn.commit()
     cursor.close()
     conn.close()
@@ -756,7 +763,7 @@ def mark_story_viewed(story_id):
     conn.close()
     return jsonify({'status': 'success'})
 
-# --- 📝 Post APIs (제목 없는 형태 지원) ---
+# --- 📝 Post APIs ---
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
     conn = get_db_connection()
@@ -945,6 +952,7 @@ def get_user_posts(username):
 
     return jsonify({'status': 'success', 'posts': posts})
 
+# 📝 게시글 생성 (한국 시각 KST 저장)
 @app.route('/api/posts', methods=['POST'])
 def create_post():
     if 'username' not in session:
@@ -963,11 +971,12 @@ def create_post():
 
     username = session['username']
     image_url_db = json.dumps(image_urls) if image_urls else ''
+    now_kst = get_kst_now()
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO posts (username, title, content, image_url) VALUES (%s, %s, %s, %s);', 
-                   (username, title, content, image_url_db))
+    cursor.execute('INSERT INTO posts (username, title, content, image_url, created_at) VALUES (%s, %s, %s, %s, %s);', 
+                   (username, title, content, image_url_db, now_kst))
     conn.commit()
     cursor.close()
     conn.close()
@@ -1023,6 +1032,7 @@ def get_comments(post_id):
 
     return jsonify({'status': 'success', 'comments': comments})
 
+# 💬 댓글 생성 (한국 시각 KST 저장)
 @app.route('/api/comments', methods=['POST'])
 def add_comment():
     if 'username' not in session:
@@ -1036,11 +1046,12 @@ def add_comment():
         return jsonify({'status': 'error', 'message': '댓글 내용을 입력해 주세요.'}), 400
 
     username = session['username']
+    now_kst = get_kst_now()
 
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('INSERT INTO comments (post_id, username, content) VALUES (%s, %s, %s);', 
-                   (post_id, username, content))
+    cursor.execute('INSERT INTO comments (post_id, username, content, created_at) VALUES (%s, %s, %s, %s);', 
+                   (post_id, username, content, now_kst))
     conn.commit()
     cursor.close()
     conn.close()

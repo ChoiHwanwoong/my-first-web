@@ -7,7 +7,7 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- ✂️ Cropper.js (이미지 자르기/조절 라이브러리) -->
+    <!-- ✂️ Cropper.js -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
@@ -66,7 +66,6 @@
         <aside class="hidden md:block space-y-6">
             <div id="profileCard" class="bg-white p-4 border border-slate-200 rounded-xl shadow-sm"></div>
             
-            <!-- 추천 카드 (admin 계정 시 숨김) -->
             <div id="recommendationCard" class="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                 <div class="flex items-center justify-between text-xs font-bold text-slate-900 mb-3">
                     <span>회원님을 위한 맞춤 추천</span>
@@ -75,7 +74,6 @@
                 <div id="recommendationList" class="space-y-3 text-xs"></div>
             </div>
 
-            <!-- 오늘의 주요 뉴스 카드 -->
             <div class="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                 <div class="flex items-center justify-between text-xs font-bold text-slate-900 mb-3">
                     <span class="flex items-center gap-1.5"><i class="fa-solid fa-newspaper text-blue-500"></i> 오늘의 주요 뉴스</span>
@@ -92,7 +90,7 @@
 
     </main>
 
-    <!-- 1. 로그인 / 회원가입 / 아이디 찾기 / 비밀번호 재설정 모달 -->
+    <!-- 1. 로그인 모달 -->
     <div id="authModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl relative">
             <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -162,7 +160,7 @@
         </div>
     </div>
 
-    <!-- 2. 게시물 작성 모달 -->
+    <!-- 2. 게시물 작성 모달 (최대 5장 지원) -->
     <div id="createPostModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
             <button onclick="closeCreatePostModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -174,13 +172,14 @@
             <div class="space-y-3 text-xs">
                 <input type="text" id="postTitleInput" placeholder="제목" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
                 
-                <div class="border border-slate-200 rounded-lg p-2.5 bg-slate-50 flex items-center justify-between">
-                    <input type="file" id="postFileInput" accept="image/*" onchange="handleFileSelect(this, 'post')" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100">
+                <div class="border border-slate-200 rounded-lg p-2.5 bg-slate-50 flex flex-col gap-1">
+                    <span class="text-[11px] font-semibold text-slate-600">사진 선택 (최대 5장)</span>
+                    <input type="file" id="postFileInput" accept="image/*" multiple onchange="handleMultipleFileSelect(this, 'post')" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100">
                 </div>
 
-                <div id="postCroppedPreviewArea" class="hidden text-center py-2">
-                    <img id="postCroppedPreview" class="max-h-48 mx-auto rounded-lg border border-slate-200 shadow-sm">
-                    <span class="text-[10px] text-green-600 font-bold block mt-1"><i class="fa-solid fa-circle-check"></i> 편집된 사진 적용됨</span>
+                <div id="postCroppedPreviewArea" class="hidden py-2">
+                    <div id="postPreviewList" class="flex gap-2 overflow-x-auto pb-2"></div>
+                    <span class="text-[10px] text-green-600 font-bold block text-center"><i class="fa-solid fa-circle-check"></i> 편집된 사진 적용됨</span>
                 </div>
 
                 <textarea id="postContentInput" rows="3" placeholder="문구 입력..." class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400 resize-none"></textarea>
@@ -222,7 +221,7 @@
                 <input type="text" id="storyTitleInput" placeholder="스토리 제목" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
                 
                 <div class="border border-slate-200 rounded-lg p-2.5 bg-slate-50 flex items-center justify-between">
-                    <input type="file" id="storyFileInput" accept="image/*" onchange="handleFileSelect(this, 'story')" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100">
+                    <input type="file" id="storyFileInput" accept="image/*" onchange="handleMultipleFileSelect(this, 'story')" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100">
                 </div>
 
                 <div id="storyCroppedPreviewArea" class="hidden text-center py-2">
@@ -241,7 +240,7 @@
     <div id="cropperModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh]">
             <div class="p-4 border-b border-slate-100 font-bold text-center text-xs text-slate-900 flex justify-between items-center">
-                <span>사진 편집 (크기/위치 조절)</span>
+                <span id="cropperModalTitle">사진 편집 (1 / 1)</span>
                 <button onclick="closeCropperModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
@@ -249,25 +248,24 @@
                 <img id="cropperTargetImage" class="max-w-full max-h-full block">
             </div>
 
-            <!-- 편집 도구 버튼 바 -->
             <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs">
                 <div class="flex items-center gap-2">
-                    <button onclick="setAspectRatio(1)" class="px-2.5 py-1 bg-white border border-slate-200 rounded hover:bg-slate-100 font-bold text-[11px]" title="1:1 비율">1:1</button>
-                    <button onclick="setAspectRatio(9/16)" class="px-2.5 py-1 bg-white border border-slate-200 rounded hover:bg-slate-100 font-bold text-[11px]" title="9:16 비율">9:16</button>
-                    <button onclick="setAspectRatio(NaN)" class="px-2.5 py-1 bg-white border border-slate-200 rounded hover:bg-slate-100 font-bold text-[11px]" title="자유 비율">자유</button>
+                    <button onclick="setAspectRatio(1)" class="px-2.5 py-1 bg-white border border-slate-200 rounded hover:bg-slate-100 font-bold text-[11px]">1:1</button>
+                    <button onclick="setAspectRatio(9/16)" class="px-2.5 py-1 bg-white border border-slate-200 rounded hover:bg-slate-100 font-bold text-[11px]">9:16</button>
+                    <button onclick="setAspectRatio(NaN)" class="px-2.5 py-1 bg-white border border-slate-200 rounded hover:bg-slate-100 font-bold text-[11px]">자유</button>
                 </div>
                 
                 <div class="flex items-center gap-2 text-slate-700">
-                    <button onclick="cropperZoom(0.1)" class="p-1.5 bg-white border border-slate-200 rounded hover:bg-slate-100" title="확대"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
-                    <button onclick="cropperZoom(-0.1)" class="p-1.5 bg-white border border-slate-200 rounded hover:bg-slate-100" title="축소"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
-                    <button onclick="cropperRotate(-90)" class="p-1.5 bg-white border border-slate-200 rounded hover:bg-slate-100" title="왼쪽 회전"><i class="fa-solid fa-rotate-left"></i></button>
-                    <button onclick="cropperRotate(90)" class="p-1.5 bg-white border border-slate-200 rounded hover:bg-slate-100" title="오른쪽 회전"><i class="fa-solid fa-rotate-right"></i></button>
+                    <button onclick="cropperZoom(0.1)" class="p-1.5 bg-white border border-slate-200 rounded hover:bg-slate-100"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                    <button onclick="cropperZoom(-0.1)" class="p-1.5 bg-white border border-slate-200 rounded hover:bg-slate-100"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                    <button onclick="cropperRotate(-90)" class="p-1.5 bg-white border border-slate-200 rounded hover:bg-slate-100"><i class="fa-solid fa-rotate-left"></i></button>
+                    <button onclick="cropperRotate(90)" class="p-1.5 bg-white border border-slate-200 rounded hover:bg-slate-100"><i class="fa-solid fa-rotate-right"></i></button>
                 </div>
             </div>
 
             <div class="p-3 bg-white border-t border-slate-100 flex gap-2">
                 <button onclick="closeCropperModal()" class="w-1/2 py-2 bg-slate-100 hover:bg-slate-200 font-semibold text-xs rounded-lg transition">취소</button>
-                <button onclick="applyCroppedImage()" class="w-1/2 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs rounded-lg transition">적용하기</button>
+                <button onclick="applyCroppedImage()" class="w-1/2 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs rounded-lg transition" id="cropperApplyBtn">다음 사진 / 적용</button>
             </div>
         </div>
     </div>
@@ -311,10 +309,12 @@
         let isSubmittingPost = false;
         let isSubmittingStory = false;
 
-        // ✂️ Cropper.js 관련 변수
+        // ✂️ 멀티 파일 Cropper 변수
         let cropperInstance = null;
-        let currentCropMode = null; // 'post' or 'story'
-        let postCroppedBlob = null;
+        let currentCropMode = null;
+        let pendingFiles = [];
+        let currentFileIndex = 0;
+        let postCroppedBlobs = [];
         let storyCroppedBlob = null;
 
         function getDefaultAvatar(sizeClass = "text-base") {
@@ -349,34 +349,49 @@
             return `${past.getFullYear()}년 ${past.getMonth() + 1}월 ${past.getDate()}일`;
         }
 
-        // ✂️ 이미지 파일 선택 시 Cropper 모달 오픈
-        function handleFileSelect(input, mode) {
-            if (input.files && input.files[0]) {
-                currentCropMode = mode;
-                const file = input.files[0];
-                const reader = new FileReader();
+        // ✂️ 멀티 파일 선택 처리
+        function handleMultipleFileSelect(input, mode) {
+            if (!input.files || input.files.length === 0) return;
 
-                reader.onload = function (e) {
-                    const targetImage = document.getElementById('cropperTargetImage');
-                    targetImage.src = e.target.result;
-                    
-                    document.getElementById('cropperModal').classList.remove('hidden');
+            currentCropMode = mode;
+            pendingFiles = Array.from(input.files).slice(0, 5); // 최대 5장 제한
+            currentFileIndex = 0;
 
-                    if (cropperInstance) {
-                        cropperInstance.destroy();
-                    }
+            if (mode === 'post') postCroppedBlobs = [];
+            else storyCroppedBlob = null;
 
-                    const initialRatio = mode === 'story' ? 9 / 16 : 1;
+            processNextFile();
+        }
 
-                    cropperInstance = new Cropper(targetImage, {
-                        aspectRatio: initialRatio,
-                        viewMode: 1,
-                        autoCropArea: 0.9,
-                        responsive: true
-                    });
-                };
-                reader.readAsDataURL(file);
+        function processNextFile() {
+            if (currentFileIndex >= pendingFiles.length) {
+                closeCropperModal();
+                updatePreviewArea();
+                return;
             }
+
+            const file = pendingFiles[currentFileIndex];
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                const targetImage = document.getElementById('cropperTargetImage');
+                targetImage.src = e.target.result;
+                
+                document.getElementById('cropperModalTitle').innerText = `사진 편집 (${currentFileIndex + 1} / ${pendingFiles.length})`;
+                document.getElementById('cropperApplyBtn').innerText = (currentFileIndex === pendingFiles.length - 1) ? '적용하기' : '다음 사진';
+                document.getElementById('cropperModal').classList.remove('hidden');
+
+                if (cropperInstance) cropperInstance.destroy();
+
+                const initialRatio = currentCropMode === 'story' ? 9 / 16 : 1;
+                cropperInstance = new Cropper(targetImage, {
+                    aspectRatio: initialRatio,
+                    viewMode: 1,
+                    autoCropArea: 0.9,
+                    responsive: true
+                });
+            };
+            reader.readAsDataURL(file);
         }
 
         function setAspectRatio(ratio) { if (cropperInstance) cropperInstance.setAspectRatio(ratio); }
@@ -391,7 +406,6 @@
             }
         }
 
-        // ✂️ 자른 결과 적용하기
         function applyCroppedImage() {
             if (!cropperInstance) return;
 
@@ -399,18 +413,34 @@
                 maxWidth: 1200,
                 maxHeight: 1200
             }).toBlob((blob) => {
-                const previewUrl = URL.createObjectURL(blob);
                 if (currentCropMode === 'post') {
-                    postCroppedBlob = blob;
-                    document.getElementById('postCroppedPreview').src = previewUrl;
-                    document.getElementById('postCroppedPreviewArea').classList.remove('hidden');
-                } else if (currentCropMode === 'story') {
+                    postCroppedBlobs.push(blob);
+                } else {
                     storyCroppedBlob = blob;
-                    document.getElementById('storyCroppedPreview').src = previewUrl;
-                    document.getElementById('storyCroppedPreviewArea').classList.remove('hidden');
                 }
-                closeCropperModal();
+
+                currentFileIndex++;
+                processNextFile();
             }, 'image/jpeg', 0.9);
+        }
+
+        function updatePreviewArea() {
+            if (currentCropMode === 'post' && postCroppedBlobs.length > 0) {
+                const previewList = document.getElementById('postPreviewList');
+                previewList.innerHTML = '';
+                postCroppedBlobs.forEach((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.className = "w-16 h-16 object-cover rounded-lg border border-slate-200 shrink-0";
+                    previewList.appendChild(img);
+                });
+                document.getElementById('postCroppedPreviewArea').classList.remove('hidden');
+            } else if (currentCropMode === 'story' && storyCroppedBlob) {
+                const url = URL.createObjectURL(storyCroppedBlob);
+                document.getElementById('storyCroppedPreview').src = url;
+                document.getElementById('storyCroppedPreviewArea').classList.remove('hidden');
+            }
         }
 
         function checkLoginStatus() {
@@ -574,6 +604,7 @@
                 });
         }
 
+        // 📸 게시글 로드 (슬라이더 지원)
         function loadPosts() {
             fetch('/api/posts')
                 .then(res => res.json())
@@ -590,11 +621,45 @@
                         const article = document.createElement('article');
                         article.className = "border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm";
                         
-                        const imageHtml = post.image_url ? 
-                            `<img src="${escapeHtml(post.image_url)}" alt="Post Image" class="w-full max-h-[450px] object-cover border-y border-slate-100">` :
-                            `<div class="bg-slate-50 p-8 text-center flex flex-col items-center justify-center border-y border-slate-100 min-h-[180px]">
-                                <h3 class="text-base font-bold text-slate-800 mb-1">${escapeHtml(post.title)}</h3>
-                            </div>`;
+                        const images = post.image_urls && post.image_urls.length > 0 ? post.image_urls : (post.image_url ? [post.image_url] : []);
+                        
+                        let mediaHtml = '';
+
+                        if (images.length > 0) {
+                            if (images.length === 1) {
+                                mediaHtml = `<img src="${escapeHtml(images[0])}" class="w-full max-h-[450px] object-cover border-y border-slate-100">`;
+                            } else {
+                                // 🌟 2장 이상인 경우 슬라이더 생성
+                                const slides = images.map((img, idx) => `
+                                    <div class="w-full flex-shrink-0" style="display: ${idx === 0 ? 'block' : 'none'};" data-slide="${idx}">
+                                        <img src="${escapeHtml(img)}" class="w-full max-h-[450px] object-cover border-y border-slate-100">
+                                    </div>
+                                `).join('');
+
+                                const dots = images.map((_, idx) => `
+                                    <span class="w-1.5 h-1.5 rounded-full ${idx === 0 ? 'bg-blue-500' : 'bg-slate-300'} transition-all" data-dot="${idx}"></span>
+                                `).join('');
+
+                                mediaHtml = `
+                                    <div class="relative group select-none overflow-hidden" id="slider-${post.id}" data-current="0" data-total="${images.length}">
+                                        <div class="flex transition-transform duration-300">
+                                            ${slides}
+                                        </div>
+                                        <button onclick="slidePost(${post.id}, -1)" class="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition shadow"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                                        <button onclick="slidePost(${post.id}, 1)" class="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition shadow"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                                        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/30 px-2 py-1 rounded-full">
+                                            ${dots}
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        } else {
+                            mediaHtml = `
+                                <div class="bg-slate-50 p-8 text-center flex flex-col items-center justify-center border-y border-slate-100 min-h-[180px]">
+                                    <h3 class="text-base font-bold text-slate-800 mb-1">${escapeHtml(post.title)}</h3>
+                                </div>
+                            `;
+                        }
 
                         const avatarHtml = post.profile_img ?
                             `<img src="${post.profile_img}" class="w-full h-full object-cover">` :
@@ -625,7 +690,7 @@
                                 ` : ''}
                             </div>
 
-                            ${imageHtml}
+                            ${mediaHtml}
 
                             <div class="p-3 text-xs">
                                 <div class="flex items-center gap-4 text-xl mb-2.5 text-slate-800">
@@ -651,6 +716,31 @@
                         loadComments(post.id);
                     });
                 });
+        }
+
+        // 🌟 게시글 이미지 슬라이더 동작
+        function slidePost(postId, direction) {
+            const slider = document.getElementById(`slider-${postId}`);
+            if (!slider) return;
+
+            let current = parseInt(slider.getAttribute('data-current'));
+            const total = parseInt(slider.getAttribute('data-total'));
+
+            let next = current + direction;
+            if (next < 0) next = total - 1;
+            if (next >= total) next = 0;
+
+            const slides = slider.querySelectorAll('[data-slide]');
+            slides.forEach((s, idx) => {
+                s.style.display = (idx === next) ? 'block' : 'none';
+            });
+
+            const dots = slider.querySelectorAll('[data-dot]');
+            dots.forEach((d, idx) => {
+                d.className = `w-1.5 h-1.5 rounded-full ${idx === next ? 'bg-blue-500' : 'bg-slate-300'} transition-all`;
+            });
+
+            slider.setAttribute('data-current', next);
         }
 
         function openEditPostModal(id, title, content) {
@@ -785,18 +875,18 @@
         }
         function closeCreatePostModal() {
             document.getElementById('createPostModal').classList.add('hidden');
-            postCroppedBlob = null;
+            postCroppedBlobs = [];
             document.getElementById('postCroppedPreviewArea').classList.add('hidden');
         }
 
+        // 🚀 멀티 이미지 제출 함수
         async function submitNewPost() {
             if (isSubmittingPost) return;
 
             const title = document.getElementById('postTitleInput').value.trim();
             const content = document.getElementById('postContentInput').value.trim();
-            const fileInput = document.getElementById('postFileInput');
             const submitBtn = document.getElementById('submitPostBtn');
-            let imageUrl = '';
+            let imageUrls = [];
 
             if (!title || !content) { alert('제목과 내용을 입력해 주세요.'); return; }
 
@@ -805,25 +895,22 @@
             submitBtn.innerText = '공유 중...';
 
             try {
-                // 편집된 바이트(Blob) 데이터 우선 전송
-                if (postCroppedBlob) {
+                if (postCroppedBlobs.length > 0) {
                     const formData = new FormData();
-                    formData.append('file', postCroppedBlob, 'cropped_post.jpg');
+                    postCroppedBlobs.forEach((blob, idx) => {
+                        formData.append('files', blob, `cropped_post_${idx}.jpg`);
+                    });
                     const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
                     const uploadData = await uploadRes.json();
-                    if (uploadData.status === 'success') imageUrl = uploadData.image_url;
-                } else if (fileInput.files.length > 0) {
-                    const formData = new FormData();
-                    formData.append('file', fileInput.files[0]);
-                    const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
-                    const uploadData = await uploadRes.json();
-                    if (uploadData.status === 'success') imageUrl = uploadData.image_url;
+                    if (uploadData.status === 'success') {
+                        imageUrls = uploadData.image_urls || [uploadData.image_url];
+                    }
                 }
 
                 const res = await fetch('/api/posts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title: title, image_url: imageUrl, content: content })
+                    body: JSON.stringify({ title: title, image_urls: imageUrls, content: content })
                 });
                 const data = await res.json();
 
@@ -867,7 +954,6 @@
 
             const title = document.getElementById('storyTitleInput').value.trim();
             const desc = document.getElementById('storyDescInput').value.trim();
-            const fileInput = document.getElementById('storyFileInput');
             const submitBtn = document.getElementById('submitStoryBtn');
             let imageUrl = '';
 
@@ -881,12 +967,6 @@
                 if (storyCroppedBlob) {
                     const formData = new FormData();
                     formData.append('file', storyCroppedBlob, 'cropped_story.jpg');
-                    const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
-                    const uploadData = await uploadRes.json();
-                    if (uploadData.status === 'success') imageUrl = uploadData.image_url;
-                } else if (fileInput.files.length > 0) {
-                    const formData = new FormData();
-                    formData.append('file', fileInput.files[0]);
                     const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
                     const uploadData = await uploadRes.json();
                     if (uploadData.status === 'success') imageUrl = uploadData.image_url;

@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, session
 import psycopg2
 import psycopg2.extras
 import os
+import json
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
@@ -431,7 +432,6 @@ def reset_password():
 
     return jsonify({'status': 'success'})
 
-# 🔑 환경설정 비밀번호 변경 API
 @app.route('/api/change-password', methods=['POST'])
 def change_password():
     if 'username' not in session:
@@ -462,7 +462,6 @@ def change_password():
 
     return jsonify({'status': 'success'})
 
-# 🚨 본인 회원 탈퇴 API
 @app.route('/api/delete-account', methods=['POST'])
 def delete_account():
     if 'username' not in session:
@@ -470,7 +469,7 @@ def delete_account():
 
     username = session['username']
     if username == 'admin':
-        return jsonify({'status': 'error', 'message': '관리자 계정은 서비스 안전을 위해 스스로 탈퇴할 수 없습니다.'}), 400
+        return jsonify({'status': 'error', 'message': '관리자 계정은 삭제할 수 없습니다.'}), 400
 
     data = request.json
     password = data.get('password', '').strip()
@@ -488,7 +487,6 @@ def delete_account():
         conn.close()
         return jsonify({'status': 'error', 'message': '비밀번호가 올바르지 않습니다.'}), 400
 
-    # 유저 관련 DB 레코드 일괄 삭제
     cursor.execute('DELETE FROM users WHERE username = %s;', (username,))
     cursor.execute('DELETE FROM posts WHERE username = %s;', (username,))
     cursor.execute('DELETE FROM comments WHERE username = %s;', (username,))
@@ -561,26 +559,35 @@ def get_following(username):
     conn.close()
     return jsonify({'status': 'success', 'users': [r[0] for r in rows]})
 
-# ☁️ 업로드 API
+# ☁️ 다중/단일 파일 Cloudinary 업로드 API
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     if 'username' not in session:
         return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
 
-    if 'file' not in request.files:
-        return jsonify({'status': 'error', 'message': '파일이 선택되지 않았습니다.'}), 400
+    if 'files' in request.files:
+        files = request.files.getlist('files')
+        image_urls = []
+        for file in files:
+            if file and file.filename != '':
+                try:
+                    upload_result = cloudinary.uploader.upload(file, folder="woongstagram/posts")
+                    image_urls.append(upload_result.get('secure_url'))
+                except Exception as e:
+                    return jsonify({'status': 'error', 'message': f'클라우드 업로드 실패: {str(e)}'}), 500
+        return jsonify({'status': 'success', 'image_urls': image_urls, 'image_url': image_urls[0] if image_urls else ''})
 
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'status': 'error', 'message': '선택된 파일이 없습니다.'}), 400
+    if 'file' in request.files:
+        file = request.files['file']
+        if file and file.filename != '':
+            try:
+                upload_result = cloudinary.uploader.upload(file, folder="woongstagram/posts")
+                image_url = upload_result.get('secure_url')
+                return jsonify({'status': 'success', 'image_url': image_url, 'image_urls': [image_url]})
+            except Exception as e:
+                return jsonify({'status': 'error', 'message': f'클라우드 업로드 실패: {str(e)}'}), 500
 
-    if file:
-        try:
-            upload_result = cloudinary.uploader.upload(file, folder="woongstagram/posts")
-            image_url = upload_result.get('secure_url')
-            return jsonify({'status': 'success', 'image_url': image_url})
-        except Exception as e:
-            return jsonify({'status': 'error', 'message': f'클라우드 업로드 실패: {str(e)}'}), 500
+    return jsonify({'status': 'error', 'message': '선택된 파일이 없습니다.'}), 400
 
 # --- 🤖 Recommendation API ---
 @app.route('/api/recommendations', methods=['GET'])
@@ -749,7 +756,7 @@ def mark_story_viewed(story_id):
     conn.close()
     return jsonify({'status': 'success'})
 
-# --- 📝 Post APIs ---
+# --- 📝 Post APIs (다중 이미지 지원) ---
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
     conn = get_db_connection()
@@ -766,12 +773,24 @@ def get_posts():
             cursor.execute('SELECT 1 FROM post_likes WHERE post_id = %s AND username = %s;', (post_id, user))
             liked = bool(cursor.fetchone())
 
+        raw_img = r['image_url'] or ''
+        image_urls = []
+        if raw_img:
+            if raw_img.startswith('['):
+                try:
+                    image_urls = json.loads(raw_img)
+                except:
+                    image_urls = [raw_img]
+            else:
+                image_urls = [raw_img]
+
         posts.append({
             'id': post_id,
             'username': r['username'],
             'title': r['title'],
             'content': r['content'],
-            'image_url': r['image_url'],
+            'image_url': image_urls[0] if image_urls else '',
+            'image_urls': image_urls,
             'likes': r['likes'],
             'created_at': r['created_at'].strftime('%Y-%m-%d %H:%M:%S') if r['created_at'] else '',
             'profile_img': r['profile_img'] or '',
@@ -802,6 +821,17 @@ def get_single_post(post_id):
     cursor.close()
     conn.close()
 
+    raw_img = r['image_url'] or ''
+    image_urls = []
+    if raw_img:
+        if raw_img.startswith('['):
+            try:
+                image_urls = json.loads(raw_img)
+            except:
+                image_urls = [raw_img]
+        else:
+            image_urls = [raw_img]
+
     return jsonify({
         'status': 'success',
         'post': {
@@ -809,7 +839,8 @@ def get_single_post(post_id):
             'username': r['username'],
             'title': r['title'],
             'content': r['content'],
-            'image_url': r['image_url'],
+            'image_url': image_urls[0] if image_urls else '',
+            'image_urls': image_urls,
             'likes': r['likes'],
             'created_at': r['created_at'].strftime('%Y-%m-%d %H:%M:%S') if r['created_at'] else '',
             'profile_img': r['profile_img'] or '',
@@ -889,14 +920,29 @@ def get_user_posts(username):
     cursor.close()
     conn.close()
 
-    posts = [{
-        'id': r['id'],
-        'title': r['title'],
-        'content': r['content'],
-        'image_url': r['image_url'],
-        'likes': r['likes'],
-        'created_at': r['created_at'].strftime('%Y-%m-%d %H:%M:%S') if r['created_at'] else ''
-    } for r in rows]
+    posts = []
+    for r in rows:
+        raw_img = r['image_url'] or ''
+        image_urls = []
+        if raw_img:
+            if raw_img.startswith('['):
+                try:
+                    image_urls = json.loads(raw_img)
+                except:
+                    image_urls = [raw_img]
+            else:
+                image_urls = [raw_img]
+
+        posts.append({
+            'id': r['id'],
+            'title': r['title'],
+            'content': r['content'],
+            'image_url': image_urls[0] if image_urls else '',
+            'image_urls': image_urls,
+            'likes': r['likes'],
+            'created_at': r['created_at'].strftime('%Y-%m-%d %H:%M:%S') if r['created_at'] else ''
+        })
+
     return jsonify({'status': 'success', 'posts': posts})
 
 @app.route('/api/posts', methods=['POST'])
@@ -907,17 +953,21 @@ def create_post():
     data = request.json
     title = data.get('title', '').strip()
     content = data.get('content', '').strip()
-    image_url = data.get('image_url', '').strip()
+    image_urls = data.get('image_urls', [])
+
+    if not image_urls and data.get('image_url'):
+        image_urls = [data.get('image_url')]
 
     if not title or not content:
-        return jsonify({'status': 'error', 'message': '제목과 내용을 모두 입력해주세요.'}), 400
+        return jsonify({'status': 'error', 'message': '제목과 내용을 모두 입력해 주세요.'}), 400
 
     username = session['username']
+    image_url_db = json.dumps(image_urls) if image_urls else ''
 
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('INSERT INTO posts (username, title, content, image_url) VALUES (%s, %s, %s, %s);', 
-                   (username, title, content, image_url))
+                   (username, title, content, image_url_db))
     conn.commit()
     cursor.close()
     conn.close()

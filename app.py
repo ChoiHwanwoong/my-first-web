@@ -134,6 +134,52 @@ def admin_page():
         return "<script>alert('관리자 권한이 필요합니다.'); location.href='/';</script>"
     return render_template('admin.html')
 
+# 🔍 [신규] 유저 & 게시글 통합 검색 API
+@app.route('/api/search', methods=['GET'])
+def search_all():
+    query = request.args.get('q', '').strip()
+    if not query or len(query) < 1:
+        return jsonify({'status': 'success', 'users': [], 'posts': []})
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    search_pattern = f"%{query}%"
+
+    # 1. 유저 검색 (아이디 키워드 일치)
+    cursor.execute('SELECT username, profile_img, bio FROM users WHERE username ILIKE %s ORDER BY id DESC LIMIT 5;', (search_pattern,))
+    user_rows = cursor.fetchall()
+    users = [{'username': r['username'], 'profile_img': r['profile_img'] or '', 'bio': r['bio'] or ''} for r in user_rows]
+
+    # 2. 게시글 검색 (본문 내용 키워드 일치)
+    cursor.execute('SELECT p.id, p.username, p.content, p.image_url, u.profile_img FROM posts p LEFT JOIN users u ON p.username = u.username WHERE p.content ILIKE %s ORDER BY p.id DESC LIMIT 5;', (search_pattern,))
+    post_rows = cursor.fetchall()
+    posts = []
+    for r in post_rows:
+        raw_img = r['image_url'] or ''
+        image_urls = []
+        if raw_img:
+            if raw_img.startswith('['):
+                try:
+                    image_urls = json.loads(raw_img)
+                except:
+                    image_urls = [raw_img]
+            else:
+                image_urls = [raw_img]
+
+        posts.append({
+            'id': r['id'],
+            'username': r['username'],
+            'content': r['content'],
+            'image_url': image_urls[0] if image_urls else '',
+            'profile_img': r['profile_img'] or ''
+        })
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({'status': 'success', 'users': users, 'posts': posts})
+
 # --- 👑 Admin APIs ---
 @app.route('/api/admin/stats', methods=['GET'])
 def get_admin_stats():
@@ -326,7 +372,6 @@ def get_user_profile(username):
         }
     })
 
-# 📝 자기소개 (30자 제한) 저장 API
 @app.route('/api/profile-bio', methods=['POST'])
 def update_profile_bio():
     if 'username' not in session:

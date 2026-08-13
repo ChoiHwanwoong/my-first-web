@@ -15,7 +15,6 @@ app.secret_key = 'super_secret_key_for_woongstagram_app'
 DEFAULT_DB_URL = "postgresql://neondb_owner:YOUR_PASSWORD@ep-xyz.region.aws.neon.tech/neondb?sslmode=require"
 DATABASE_URL = os.environ.get('DATABASE_URL', DEFAULT_DB_URL)
 
-# ☁️ Cloudinary 설정
 cloudinary.config(secure=True)
 
 NEWS_CACHE = {
@@ -23,7 +22,6 @@ NEWS_CACHE = {
     'articles': []
 }
 
-# 🇰🇷 한국 표준시(KST = UTC + 9시간) 계산 함수
 def get_kst_now():
     return datetime.now(timezone.utc) + timedelta(hours=9)
 
@@ -689,7 +687,6 @@ def get_stories():
     conn.close()
     return jsonify({'status': 'success', 'stories': stories})
 
-# 📸 스토리 생성 (한국 시각 KST 저장)
 @app.route('/api/stories', methods=['POST'])
 def create_story():
     if 'username' not in session:
@@ -952,7 +949,96 @@ def get_user_posts(username):
 
     return jsonify({'status': 'success', 'posts': posts})
 
-# 📝 게시글 생성 (한국 시각 KST 저장)
+# 🔒 [신규] 내가 좋아요한 게시물 API (본인 전용)
+@app.route('/api/users/<username>/liked-posts', methods=['GET'])
+def get_user_liked_posts(username):
+    if session.get('username') != username and not is_admin():
+        return jsonify({'status': 'error', 'message': '비공개 정보입니다.'}), 403
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    query = '''
+        SELECT p.id, p.title, p.content, p.image_url, p.likes, p.created_at 
+        FROM posts p
+        JOIN post_likes pl ON p.id = pl.post_id
+        WHERE pl.username = %s
+        ORDER BY pl.id DESC;
+    '''
+    cursor.execute(query, (username,))
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    posts = []
+    for r in rows:
+        raw_img = r['image_url'] or ''
+        image_urls = []
+        if raw_img:
+            if raw_img.startswith('['):
+                try:
+                    image_urls = json.loads(raw_img)
+                except:
+                    image_urls = [raw_img]
+            else:
+                image_urls = [raw_img]
+
+        posts.append({
+            'id': r['id'],
+            'title': r['title'] or '',
+            'content': r['content'],
+            'image_url': image_urls[0] if image_urls else '',
+            'image_urls': image_urls,
+            'likes': r['likes'],
+            'created_at': r['created_at'].strftime('%Y-%m-%d %H:%M:%S') if r['created_at'] else ''
+        })
+
+    return jsonify({'status': 'success', 'posts': posts})
+
+# 🔒 [신규] 내가 댓글 달았던 게시물 API (본인 전용)
+@app.route('/api/users/<username>/commented-posts', methods=['GET'])
+def get_user_commented_posts(username):
+    if session.get('username') != username and not is_admin():
+        return jsonify({'status': 'error', 'message': '비공개 정보입니다.'}), 403
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    query = '''
+        SELECT DISTINCT p.id, p.title, p.content, p.image_url, p.likes, p.created_at 
+        FROM posts p
+        JOIN comments c ON p.id = c.post_id
+        WHERE c.username = %s
+        ORDER BY p.id DESC;
+    '''
+    cursor.execute(query, (username,))
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    posts = []
+    for r in rows:
+        raw_img = r['image_url'] or ''
+        image_urls = []
+        if raw_img:
+            if raw_img.startswith('['):
+                try:
+                    image_urls = json.loads(raw_img)
+                except:
+                    image_urls = [raw_img]
+            else:
+                image_urls = [raw_img]
+
+        posts.append({
+            'id': r['id'],
+            'title': r['title'] or '',
+            'content': r['content'],
+            'image_url': image_urls[0] if image_urls else '',
+            'image_urls': image_urls,
+            'likes': r['likes'],
+            'created_at': r['created_at'].strftime('%Y-%m-%d %H:%M:%S') if r['created_at'] else ''
+        })
+
+    return jsonify({'status': 'success', 'posts': posts})
+
 @app.route('/api/posts', methods=['POST'])
 def create_post():
     if 'username' not in session:
@@ -1032,7 +1118,6 @@ def get_comments(post_id):
 
     return jsonify({'status': 'success', 'comments': comments})
 
-# 💬 댓글 생성 (한국 시각 KST 저장)
 @app.route('/api/comments', methods=['POST'])
 def add_comment():
     if 'username' not in session:

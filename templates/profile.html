@@ -71,10 +71,17 @@
             </div>
         </div>
 
-        <div class="flex justify-center border-t border-slate-200 -mt-[1px]">
-            <div class="flex items-center gap-2 py-3 border-t-2 border-slate-900 font-bold text-xs text-slate-900 tracking-wider">
+        <!-- 🔒 탭 메뉴 (본인일 때만 좋아요/댓글 탭 노출) -->
+        <div class="flex justify-center border-t border-slate-200 -mt-[1px] gap-8">
+            <button onclick="switchTab('posts')" id="tabPostsBtn" class="flex items-center gap-2 py-3 border-t-2 border-slate-900 font-bold text-xs text-slate-900 tracking-wider">
                 <i class="fa-solid fa-table-cells text-sm"></i> 게시물
-            </div>
+            </button>
+            <button onclick="switchTab('likes')" id="tabLikesBtn" class="hidden items-center gap-2 py-3 border-t-2 border-transparent font-semibold text-xs text-slate-400 hover:text-slate-600 tracking-wider">
+                <i class="fa-solid fa-heart text-sm"></i> 좋아요
+            </button>
+            <button onclick="switchTab('comments')" id="tabCommentsBtn" class="hidden items-center gap-2 py-3 border-t-2 border-transparent font-semibold text-xs text-slate-400 hover:text-slate-600 tracking-wider">
+                <i class="fa-solid fa-comment text-sm"></i> 댓글
+            </button>
         </div>
 
         <div id="myPostsGrid" class="grid grid-cols-3 gap-1 sm:gap-4 mt-2"></div>
@@ -180,9 +187,8 @@
                 </div>
             </div>
 
-            <div id="storyBg" class="absolute inset-0 flex flex-col items-center justify-center text-white p-8 text-center bg-cover bg-center">
-                <h3 id="storyTitle" class="text-2xl font-bold tracking-tight mb-2 drop-shadow-md">Story Title</h3>
-                <p id="storyDesc" class="text-xs text-white/90 leading-relaxed max-w-xs drop-shadow-md">Story Description Content</p>
+            <div id="storyBg" class="absolute inset-0 flex flex-col items-center justify-end text-white p-6 pb-16 text-center bg-cover bg-center">
+                <p id="storyDesc" class="text-lg sm:text-xl font-serif italic font-bold text-white leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] tracking-wide max-w-xs"></p>
             </div>
         </div>
     </div>
@@ -203,7 +209,6 @@
                         <a id="modalUsername" href="#" class="font-bold text-slate-900 hover:underline"></a>
                     </div>
                     
-                    <h3 id="modalTitle" class="font-bold text-slate-900 mb-1"></h3>
                     <p id="modalContent" class="text-slate-700 leading-relaxed mb-4 pb-3 border-b border-slate-100"></p>
 
                     <div id="modalCommentsList" class="space-y-2 text-[11px] mb-4"></div>
@@ -241,6 +246,7 @@
         let loggedInUser = null;
         let myActiveStory = null;
         let storyTimer = null;
+        let currentTab = 'posts'; // 'posts', 'likes', 'comments'
 
         function getDefaultAvatar(sizeClass = "text-xl") {
             return `<div class="w-full h-full bg-slate-200 text-slate-400 flex items-center justify-center"><i class="fa-solid fa-user ${sizeClass}"></i></div>`;
@@ -315,20 +321,27 @@
             const actionArea = document.getElementById('profileActionArea');
             const uploadBtn = document.getElementById('profileImageUploadBtn');
 
+            const tabLikesBtn = document.getElementById('tabLikesBtn');
+            const tabCommentsBtn = document.getElementById('tabCommentsBtn');
+
             if (isMyProfile) {
                 document.getElementById('profileEmail').innerText = user.email;
                 uploadBtn.classList.remove('hidden');
                 uploadBtn.classList.add('flex');
                 uploadBtn.onclick = () => document.getElementById('profileImageInput').click();
 
-                // ⚙️ 내 프로필: 환경설정 톱니바퀴 버튼 배치
+                // 🔒 본인 프로필일 때 좋아요 & 댓글 탭 노출
+                tabLikesBtn.classList.remove('hidden');
+                tabLikesBtn.classList.add('flex');
+                tabCommentsBtn.classList.remove('hidden');
+                tabCommentsBtn.classList.add('flex');
+
                 actionArea.innerHTML = `
                     <button onclick="openSettingsModal()" class="p-2 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-full transition text-lg" title="환경설정">
                         <i class="fa-solid fa-gear"></i>
                     </button>
                 `;
 
-                // admin 계정이면 탈퇴 버튼 숨김
                 if (user.username === 'admin') {
                     const delBtn = document.getElementById('deleteAccountBtn');
                     if (delBtn) delBtn.classList.add('hidden');
@@ -339,6 +352,12 @@
                 document.getElementById('profileEmail').innerText = '';
                 uploadBtn.classList.add('hidden');
                 uploadBtn.classList.remove('flex');
+
+                // 타인 프로필일 때는 좋아요 & 댓글 탭 숨김
+                tabLikesBtn.classList.add('hidden');
+                tabLikesBtn.classList.remove('flex');
+                tabCommentsBtn.classList.add('hidden');
+                tabCommentsBtn.classList.remove('flex');
 
                 const btnText = user.is_following ? '팔로잉' : '팔로우';
                 const btnClass = user.is_following ? 
@@ -354,7 +373,37 @@
                 checkActiveStory(user.username, user.profile_img);
             }
 
-            loadUserPosts(user.username);
+            switchTab('posts');
+        }
+
+        // 🔒 탭 전환 처리
+        function switchTab(tab) {
+            currentTab = tab;
+            const postsBtn = document.getElementById('tabPostsBtn');
+            const likesBtn = document.getElementById('tabLikesBtn');
+            const commentsBtn = document.getElementById('tabCommentsBtn');
+
+            postsBtn.className = "flex items-center gap-2 py-3 border-t-2 border-transparent font-semibold text-xs text-slate-400 hover:text-slate-600 tracking-wider";
+            likesBtn.className = "hidden items-center gap-2 py-3 border-t-2 border-transparent font-semibold text-xs text-slate-400 hover:text-slate-600 tracking-wider";
+            commentsBtn.className = "hidden items-center gap-2 py-3 border-t-2 border-transparent font-semibold text-xs text-slate-400 hover:text-slate-600 tracking-wider";
+
+            if (loggedInUser === currentProfileUser) {
+                likesBtn.classList.remove('hidden');
+                likesBtn.classList.add('flex');
+                commentsBtn.classList.remove('hidden');
+                commentsBtn.classList.add('flex');
+            }
+
+            if (tab === 'posts') {
+                postsBtn.className = "flex items-center gap-2 py-3 border-t-2 border-slate-900 font-bold text-xs text-slate-900 tracking-wider";
+                loadUserPosts(currentProfileUser);
+            } else if (tab === 'likes') {
+                likesBtn.className = "flex items-center gap-2 py-3 border-t-2 border-slate-900 font-bold text-xs text-slate-900 tracking-wider";
+                loadUserLikedPosts(currentProfileUser);
+            } else if (tab === 'comments') {
+                commentsBtn.className = "flex items-center gap-2 py-3 border-t-2 border-slate-900 font-bold text-xs text-slate-900 tracking-wider";
+                loadUserCommentedPosts(currentProfileUser);
+            }
         }
 
         async function checkActiveStory(username, profileImg) {
@@ -392,8 +441,14 @@
             }
 
             document.getElementById('storyTimeAgo').innerText = timeAgo(myActiveStory.created_at);
-            document.getElementById('storyTitle').innerText = myActiveStory.title;
-            document.getElementById('storyDesc').innerText = myActiveStory.desc;
+            
+            const descEl = document.getElementById('storyDesc');
+            if (myActiveStory.desc) {
+                descEl.innerText = myActiveStory.desc;
+                descEl.classList.remove('hidden');
+            } else {
+                descEl.classList.add('hidden');
+            }
 
             const bg = document.getElementById('storyBg');
             if (myActiveStory.image_url) {
@@ -458,7 +513,6 @@
             });
         }
 
-        // ⚙️ 환경설정 모달 제어
         function openSettingsModal() { document.getElementById('settingsModal').classList.remove('hidden'); }
         function closeSettingsModal() { document.getElementById('settingsModal').classList.add('hidden'); }
 
@@ -508,7 +562,6 @@
         }
         function closeDeleteAccModal() { document.getElementById('deleteAccModal').classList.add('hidden'); }
 
-        // 🚨 회원 탈퇴 요청 처리
         function submitDeleteAccount() {
             const password = document.getElementById('deleteAccPasswordInput').value.trim();
 
@@ -590,43 +643,70 @@
             document.getElementById('followListModal').classList.add('hidden');
         }
 
+        // 📸 내 작성 게시물 랜더링
         function loadUserPosts(username) {
             fetch(`/api/posts/user/${username}`)
                 .then(res => res.json())
                 .then(data => {
-                    const grid = document.getElementById('myPostsGrid');
-                    grid.innerHTML = '';
-
+                    renderGridPosts(data, '작성한 게시물이 없습니다.');
                     if (data.status === 'success') {
                         document.getElementById('postCount').innerText = data.posts.length;
-
-                        if (data.posts.length === 0) {
-                            grid.className = "text-center py-16 text-xs text-slate-400 col-span-3";
-                            grid.innerHTML = '작성한 게시물이 없습니다.';
-                            return;
-                        }
-
-                        data.posts.forEach(post => {
-                            const card = document.createElement('div');
-                            card.className = "aspect-square bg-slate-100 rounded-lg overflow-hidden relative group cursor-pointer border border-slate-200";
-                            card.onclick = () => openPostDetailModal(post.id);
-
-                            const img = post.image_url ? 
-                                `<img src="${escapeHtml(post.image_url)}" class="w-full h-full object-cover">` :
-                                `<div class="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50">
-                                    <span class="font-bold text-xs text-slate-800 line-clamp-2">${escapeHtml(post.title)}</span>
-                                </div>`;
-
-                            card.innerHTML = `
-                                ${img}
-                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-bold text-xs gap-3">
-                                    <span><i class="fa-solid fa-heart mr-1"></i> ${post.likes}</span>
-                                </div>
-                            `;
-                            grid.appendChild(card);
-                        });
                     }
                 });
+        }
+
+        // ❤️ 내가 좋아요한 게시물 랜더링
+        function loadUserLikedPosts(username) {
+            fetch(`/api/users/${username}/liked-posts`)
+                .then(res => res.json())
+                .then(data => {
+                    renderGridPosts(data, '좋아요를 누른 게시물이 없습니다.');
+                });
+        }
+
+        // 💬 내가 댓글을 남긴 게시물 랜더링
+        function loadUserCommentedPosts(username) {
+            fetch(`/api/users/${username}/commented-posts`)
+                .then(res => res.json())
+                .then(data => {
+                    renderGridPosts(data, '댓글을 남긴 게시물이 없습니다.');
+                });
+        }
+
+        // 공통 그리드 출력 함수
+        function renderGridPosts(data, emptyMessage) {
+            const grid = document.getElementById('myPostsGrid');
+            grid.innerHTML = '';
+
+            if (data.status === 'success') {
+                if (data.posts.length === 0) {
+                    grid.className = "text-center py-16 text-xs text-slate-400 col-span-3";
+                    grid.innerHTML = emptyMessage;
+                    return;
+                }
+
+                grid.className = "grid grid-cols-3 gap-1 sm:gap-4 mt-2";
+
+                data.posts.forEach(post => {
+                    const card = document.createElement('div');
+                    card.className = "aspect-square bg-slate-100 rounded-lg overflow-hidden relative group cursor-pointer border border-slate-200";
+                    card.onclick = () => openPostDetailModal(post.id);
+
+                    const img = post.image_url ? 
+                        `<img src="${escapeHtml(post.image_url)}" class="w-full h-full object-cover">` :
+                        `<div class="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-slate-50">
+                            <span class="font-semibold text-xs text-slate-800 line-clamp-3">${escapeHtml(post.content)}</span>
+                        </div>`;
+
+                    card.innerHTML = `
+                        ${img}
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white font-bold text-xs gap-3">
+                            <span><i class="fa-solid fa-heart mr-1"></i> ${post.likes}</span>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
         }
 
         function openPostDetailModal(postId) {
@@ -644,14 +724,15 @@
 
                         document.getElementById('modalUsername').innerText = `@${post.username}`;
                         document.getElementById('modalUsername').href = `/profile/${post.username}`;
-                        document.getElementById('modalTitle').innerText = post.title;
                         document.getElementById('modalContent').innerText = post.content;
 
                         const imgArea = document.getElementById('modalImageArea');
-                        if (post.image_url) {
-                            imgArea.innerHTML = `<img src="${escapeHtml(post.image_url)}" class="w-full h-full object-contain max-h-[400px]">`;
+                        const images = post.image_urls && post.image_urls.length > 0 ? post.image_urls : (post.image_url ? [post.image_url] : []);
+                        
+                        if (images.length > 0) {
+                            imgArea.innerHTML = `<img src="${escapeHtml(images[0])}" class="w-full h-full object-contain max-h-[400px]">`;
                         } else {
-                            imgArea.innerHTML = `<div class="text-white text-xs p-6 text-center">${escapeHtml(post.title)}</div>`;
+                            imgArea.innerHTML = `<div class="text-white text-xs p-6 text-center">${escapeHtml(post.content)}</div>`;
                         }
 
                         const submitBtn = document.getElementById('modalCommentSubmitBtn');

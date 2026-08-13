@@ -160,7 +160,7 @@
         </div>
     </div>
 
-    <!-- 2. 게시물 작성 모달 (제목 삭제) -->
+    <!-- 2. 게시물 작성 모달 -->
     <div id="createPostModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
             <button onclick="closeCreatePostModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -187,7 +187,7 @@
         </div>
     </div>
 
-    <!-- 2-1. 게시물 수정 모달 (제목 삭제) -->
+    <!-- 2-1. 게시물 수정 모달 -->
     <div id="editPostModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
             <button onclick="closeEditPostModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -224,7 +224,7 @@
                     <span class="text-[10px] text-green-600 font-bold block mt-1"><i class="fa-solid fa-circle-check"></i> 편집된 스토리 사진 적용됨</span>
                 </div>
 
-                <textarea id="storyDescInput" rows="3" placeholder="스토리에 남길 문구를 입력하세요..." class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400 resize-none"></textarea>
+                <textarea id="storyDescInput" rows="3" placeholder="스토리에 남길 문구를 입력하세요..." class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400 resize-none font-serif italic"></textarea>
                 
                 <button id="submitStoryBtn" onclick="submitNewStory()" class="w-full py-2.5 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-lg transition disabled:bg-pink-300 disabled:cursor-not-allowed">스토리 올리기</button>
             </div>
@@ -265,7 +265,7 @@
         </div>
     </div>
 
-    <!-- 4. 스토리 뷰어 모달 -->
+    <!-- 4. 스토리 뷰어 모달 (상자 없이 감성 폰트 적용) -->
     <div id="storyModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center">
         <button onclick="closeStoryModal()" class="absolute top-5 right-5 text-white text-2xl hover:text-slate-400 z-50">
             <i class="fa-solid fa-xmark"></i>
@@ -288,10 +288,9 @@
                 </div>
             </div>
 
-            <div id="storyBg" class="absolute inset-0 flex flex-col items-center justify-end text-white p-6 pb-12 text-center bg-cover bg-center">
-                <div id="storyDescBox" class="bg-black/40 backdrop-blur-md p-4 rounded-xl max-w-xs border border-white/20 shadow-lg">
-                    <p id="storyDesc" class="text-sm font-medium text-white leading-relaxed drop-shadow-md">Story Content</p>
-                </div>
+            <!-- 🌟 네모 상자 없이 Woongstagram 감성 폰트로 텍스트 표시 -->
+            <div id="storyBg" class="absolute inset-0 flex flex-col items-center justify-end text-white p-6 pb-16 text-center bg-cover bg-center">
+                <p id="storyDesc" class="text-lg sm:text-xl font-serif italic font-bold text-white leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] tracking-wide max-w-xs"></p>
             </div>
         </div>
     </div>
@@ -862,7 +861,6 @@
             document.getElementById('postCroppedPreviewArea').classList.add('hidden');
         }
 
-        // 🚀 제목 없는 게시글 전송 함수
         async function submitNewPost() {
             if (isSubmittingPost) return;
 
@@ -937,7 +935,7 @@
             const submitBtn = document.getElementById('submitStoryBtn');
             let imageUrl = '';
 
-            if (!desc && !storyCroppedBlob) { alert('스토리 문구나 사진을 추가해 주세요.'); return; }
+            if (!desc && !storyCroppedBlob) { alert('스토리 문구가 사진을 추가해 주세요.'); return; }
 
             isSubmittingStory = true;
             submitBtn.disabled = true;
@@ -983,6 +981,7 @@
             }
         }
 
+        // 📸 스토리 뷰어 모달 (상자 없이 글씨만 돋보이게 표시)
         function showStoryModal(el, storyId, username, desc, imageUrl, createdAt, profileImg) {
             if (currentUser) {
                 fetch(`/api/stories/${storyId}/view`, { method: 'POST' });
@@ -1012,13 +1011,11 @@
             document.getElementById('storyTimeAgo').innerText = timeAgo(createdAt);
             
             const descEl = document.getElementById('storyDesc');
-            const descBox = document.getElementById('storyDescBox');
-            
             if (desc) {
                 descEl.innerText = desc;
-                descBox.classList.remove('hidden');
+                descEl.classList.remove('hidden');
             } else {
-                descBox.classList.add('hidden');
+                descEl.classList.add('hidden');
             }
 
             const bg = document.getElementById('storyBg');

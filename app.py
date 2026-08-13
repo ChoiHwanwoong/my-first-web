@@ -45,7 +45,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS posts (
             id SERIAL PRIMARY KEY,
             username VARCHAR(100) NOT NULL,
-            title VARCHAR(255) NOT NULL,
+            title VARCHAR(255) DEFAULT '',
             content TEXT NOT NULL,
             image_url TEXT,
             likes INT DEFAULT 0,
@@ -647,7 +647,7 @@ def get_recommendations():
     conn.close()
     return jsonify({'status': 'success', 'recommendations': recommendations})
 
-# --- 📸 Story APIs (제목 없는 형태 지원) ---
+# --- 📸 Story APIs ---
 @app.route('/api/stories', methods=['GET'])
 def get_stories():
     conn = get_db_connection()
@@ -694,7 +694,6 @@ def create_story():
     desc = data.get('desc', '').strip()
     image_url = data.get('image_url', '').strip()
 
-    # 문구 내용 또는 사진 중 하나는 필수
     if not desc and not image_url:
         return jsonify({'status': 'error', 'message': '스토리 내용이나 사진을 등록해 주세요.'}), 400
 
@@ -757,7 +756,7 @@ def mark_story_viewed(story_id):
     conn.close()
     return jsonify({'status': 'success'})
 
-# --- 📝 Post APIs ---
+# --- 📝 Post APIs (제목 없는 형태 지원) ---
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
     conn = get_db_connection()
@@ -788,7 +787,7 @@ def get_posts():
         posts.append({
             'id': post_id,
             'username': r['username'],
-            'title': r['title'],
+            'title': r['title'] or '',
             'content': r['content'],
             'image_url': image_urls[0] if image_urls else '',
             'image_urls': image_urls,
@@ -838,7 +837,7 @@ def get_single_post(post_id):
         'post': {
             'id': r['id'],
             'username': r['username'],
-            'title': r['title'],
+            'title': r['title'] or '',
             'content': r['content'],
             'image_url': image_urls[0] if image_urls else '',
             'image_urls': image_urls,
@@ -858,8 +857,8 @@ def update_user_post(post_id):
     title = data.get('title', '').strip()
     content = data.get('content', '').strip()
 
-    if not title or not content:
-        return jsonify({'status': 'error', 'message': '제목과 내용을 모두 입력해 주세요.'}), 400
+    if not content:
+        return jsonify({'status': 'error', 'message': '내용을 입력해 주세요.'}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -936,7 +935,7 @@ def get_user_posts(username):
 
         posts.append({
             'id': r['id'],
-            'title': r['title'],
+            'title': r['title'] or '',
             'content': r['content'],
             'image_url': image_urls[0] if image_urls else '',
             'image_urls': image_urls,
@@ -959,8 +958,8 @@ def create_post():
     if not image_urls and data.get('image_url'):
         image_urls = [data.get('image_url')]
 
-    if not title or not content:
-        return jsonify({'status': 'error', 'message': '제목과 내용을 모두 입력해 주세요.'}), 400
+    if not content:
+        return jsonify({'status': 'error', 'message': '내용을 입력해 주세요.'}), 400
 
     username = session['username']
     image_url_db = json.dumps(image_urls) if image_urls else ''

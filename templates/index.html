@@ -160,7 +160,7 @@
         </div>
     </div>
 
-    <!-- 2. 게시물 작성 모달 -->
+    <!-- 2. 게시물 작성 모달 (제목 삭제) -->
     <div id="createPostModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
             <button onclick="closeCreatePostModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -170,8 +170,6 @@
             <h3 class="text-sm font-bold text-center border-b border-slate-100 pb-3 mb-4">새 게시물 만들기</h3>
 
             <div class="space-y-3 text-xs">
-                <input type="text" id="postTitleInput" placeholder="제목" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
-                
                 <div class="border border-slate-200 rounded-lg p-2.5 bg-slate-50 flex flex-col gap-1">
                     <span class="text-[11px] font-semibold text-slate-600">사진 선택 (최대 5장)</span>
                     <input type="file" id="postFileInput" accept="image/*" multiple onchange="handleMultipleFileSelect(this, 'post')" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100">
@@ -182,14 +180,14 @@
                     <span class="text-[10px] text-green-600 font-bold block text-center"><i class="fa-solid fa-circle-check"></i> 편집된 사진 적용됨</span>
                 </div>
 
-                <textarea id="postContentInput" rows="3" placeholder="문구 입력..." class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400 resize-none"></textarea>
+                <textarea id="postContentInput" rows="4" placeholder="문구 입력..." class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400 resize-none"></textarea>
                 
                 <button id="submitPostBtn" onclick="submitNewPost()" class="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition disabled:bg-blue-300 disabled:cursor-not-allowed">공유하기</button>
             </div>
         </div>
     </div>
 
-    <!-- 2-1. 게시물 수정 모달 -->
+    <!-- 2-1. 게시물 수정 모달 (제목 삭제) -->
     <div id="editPostModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
             <button onclick="closeEditPostModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -200,15 +198,14 @@
 
             <div class="space-y-3 text-xs">
                 <input type="hidden" id="editPostId">
-                <input type="text" id="editPostTitleInput" placeholder="제목" class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400">
-                <textarea id="editPostContentInput" rows="3" placeholder="문구 수정..." class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400 resize-none"></textarea>
+                <textarea id="editPostContentInput" rows="4" placeholder="문구 수정..." class="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-slate-400 resize-none"></textarea>
                 
                 <button id="submitEditPostBtn" onclick="submitEditPost()" class="w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition">수정 완료</button>
             </div>
         </div>
     </div>
 
-    <!-- 3. 스토리 작성 모달 (제목창 삭제) -->
+    <!-- 3. 스토리 작성 모달 -->
     <div id="createStoryModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
             <button onclick="closeCreateStoryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -268,7 +265,7 @@
         </div>
     </div>
 
-    <!-- 4. 스토리 뷰어 모달 (제목 표시 제거) -->
+    <!-- 4. 스토리 뷰어 모달 -->
     <div id="storyModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center">
         <button onclick="closeStoryModal()" class="absolute top-5 right-5 text-white text-2xl hover:text-slate-400 z-50">
             <i class="fa-solid fa-xmark"></i>
@@ -648,12 +645,6 @@
                                     </div>
                                 `;
                             }
-                        } else {
-                            mediaHtml = `
-                                <div class="bg-slate-50 p-8 text-center flex flex-col items-center justify-center border-y border-slate-100 min-h-[180px]">
-                                    <h3 class="text-base font-bold text-slate-800 mb-1">${escapeHtml(post.title)}</h3>
-                                </div>
-                            `;
                         }
 
                         const avatarHtml = post.profile_img ?
@@ -675,7 +666,7 @@
                                 </div>
                                 ${canManage ? `
                                     <div class="flex items-center gap-2">
-                                        <button onclick="openEditPostModal(${post.id}, '${escapeHtml(post.title)}', '${escapeHtml(post.content)}')" class="text-slate-400 hover:text-blue-500 transition px-1 text-xs" title="게시글 수정">
+                                        <button onclick="openEditPostModal(${post.id}, '${escapeHtml(post.content)}')" class="text-slate-400 hover:text-blue-500 transition px-1 text-xs" title="게시글 수정">
                                             <i class="fa-solid fa-pen"></i>
                                         </button>
                                         <button onclick="deletePost(${post.id})" class="text-slate-400 hover:text-red-500 transition px-1 text-xs" title="게시글 삭제">
@@ -737,9 +728,8 @@
             slider.setAttribute('data-current', next);
         }
 
-        function openEditPostModal(id, title, content) {
+        function openEditPostModal(id, content) {
             document.getElementById('editPostId').value = id;
-            document.getElementById('editPostTitleInput').value = title;
             document.getElementById('editPostContentInput').value = content;
             document.getElementById('editPostModal').classList.remove('hidden');
         }
@@ -750,15 +740,14 @@
 
         function submitEditPost() {
             const id = document.getElementById('editPostId').value;
-            const title = document.getElementById('editPostTitleInput').value.trim();
             const content = document.getElementById('editPostContentInput').value.trim();
 
-            if (!title || !content) { alert('제목과 내용을 모두 입력해 주세요.'); return; }
+            if (!content) { alert('내용을 입력해 주세요.'); return; }
 
             fetch(`/api/posts/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, content })
+                body: JSON.stringify({ content })
             })
             .then(res => res.json())
             .then(data => {
@@ -873,15 +862,15 @@
             document.getElementById('postCroppedPreviewArea').classList.add('hidden');
         }
 
+        // 🚀 제목 없는 게시글 전송 함수
         async function submitNewPost() {
             if (isSubmittingPost) return;
 
-            const title = document.getElementById('postTitleInput').value.trim();
             const content = document.getElementById('postContentInput').value.trim();
             const submitBtn = document.getElementById('submitPostBtn');
             let imageUrls = [];
 
-            if (!title || !content) { alert('제목과 내용을 입력해 주세요.'); return; }
+            if (!content) { alert('문구를 입력해 주세요.'); return; }
 
             isSubmittingPost = true;
             submitBtn.disabled = true;
@@ -903,13 +892,12 @@
                 const res = await fetch('/api/posts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title: title, image_urls: imageUrls, content: content })
+                    body: JSON.stringify({ image_urls: imageUrls, content: content })
                 });
                 const data = await res.json();
 
                 if (data.status === 'success') {
                     closeCreatePostModal();
-                    document.getElementById('postTitleInput').value = '';
                     document.getElementById('postFileInput').value = '';
                     document.getElementById('postContentInput').value = '';
                     loadPosts();
@@ -942,7 +930,6 @@
             document.getElementById('storyCroppedPreviewArea').classList.add('hidden');
         }
 
-        // 📸 제목 없는 스토리 전송 함수
         async function submitNewStory() {
             if (isSubmittingStory) return;
 
@@ -996,7 +983,6 @@
             }
         }
 
-        // 📸 스토리 뷰어 모달 (제목 제거 및 깔끔한 문구 영역만 표시)
         function showStoryModal(el, storyId, username, desc, imageUrl, createdAt, profileImg) {
             if (currentUser) {
                 fetch(`/api/stories/${storyId}/view`, { method: 'POST' });

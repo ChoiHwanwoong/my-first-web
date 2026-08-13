@@ -7,6 +7,11 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .story-ring { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+        @keyframes progress { from { width: 0%; } to { width: 100%; } }
+        .animate-progress { animation: progress 5s linear forwards; }
+    </style>
 </head>
 <body class="bg-white text-slate-900 font-sans antialiased min-h-screen flex flex-col justify-between">
 
@@ -29,10 +34,12 @@
         
         <!-- Profile Header Area -->
         <div id="profileHeader" class="flex flex-col sm:flex-row items-center sm:items-start gap-8 pb-10 border-b border-slate-200">
-            <!-- Avatar with Change Option -->
+            <!-- Avatar with Change Option / Story Ring -->
             <div class="relative group">
-                <div id="profileAvatarBox" class="w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-slate-200 text-slate-400 border border-slate-300 flex items-center justify-center font-bold shadow-md shrink-0 overflow-hidden">
-                    <i class="fa-solid fa-user text-4xl sm:text-5xl"></i>
+                <div id="profileAvatarRing" class="w-28 h-28 sm:w-36 sm:h-36 rounded-full p-[3px] transition flex items-center justify-center">
+                    <div id="profileAvatarBox" class="w-full h-full rounded-full bg-slate-200 text-slate-400 border border-slate-300 flex items-center justify-center font-bold shadow-md shrink-0 overflow-hidden bg-white">
+                        <i class="fa-solid fa-user text-4xl sm:text-5xl"></i>
+                    </div>
                 </div>
                 <!-- 이미지 변경 오버레이 버튼 -->
                 <div id="profileImageUploadBtn" class="hidden absolute inset-0 rounded-full bg-black/40 cursor-pointer flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition">
@@ -70,7 +77,37 @@
 
     </main>
 
-    <!-- 1. 게시글 상세 모달 -->
+    <!-- 1. 스토리 뷰어 모달 (내 프로필 확인용) -->
+    <div id="storyModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center">
+        <button onclick="closeStoryModal()" class="absolute top-5 right-5 text-white text-2xl hover:text-slate-400 z-50">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="w-full max-w-sm h-[580px] bg-slate-900 rounded-2xl overflow-hidden relative flex flex-col justify-between shadow-2xl border border-slate-800">
+            <div class="p-4 z-10 bg-gradient-to-b from-black/80 to-transparent">
+                <div class="w-full bg-white/30 h-1 rounded-full mb-3 overflow-hidden">
+                    <div id="storyProgress" class="bg-white h-full w-0"></div>
+                </div>
+                <div class="flex items-center justify-between text-white text-xs">
+                    <div class="flex items-center gap-2.5">
+                        <div id="storyAvatarBox" class="w-8 h-8 rounded-full bg-slate-200 text-slate-500 border border-white/50 flex items-center justify-center font-bold text-[10px] overflow-hidden"></div>
+                        <span id="storyUser" class="font-bold">username</span>
+                        <span id="storyTimeAgo" class="text-white/60 text-[10px]">방금 전</span>
+                    </div>
+                    <button id="storyDeleteBtn" class="text-white/70 hover:text-red-400 text-sm transition px-2 py-1" title="스토리 삭제">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="storyBg" class="absolute inset-0 flex flex-col items-center justify-center text-white p-8 text-center bg-cover bg-center">
+                <h3 id="storyTitle" class="text-2xl font-bold tracking-tight mb-2 drop-shadow-md">Story Title</h3>
+                <p id="storyDesc" class="text-xs text-white/90 leading-relaxed max-w-xs drop-shadow-md">Story Description Content</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 게시글 상세 모달 -->
     <div id="postDetailModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl relative flex flex-col md:flex-row max-h-[85vh]">
             <button onclick="closePostDetailModal()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-600 z-10 bg-white/80 p-1 rounded-full">
@@ -100,7 +137,7 @@
         </div>
     </div>
 
-    <!-- 2. 팔로워 / 팔로잉 목록 모달 -->
+    <!-- 3. 팔로워 / 팔로잉 목록 모달 -->
     <div id="followListModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl relative">
             <button onclick="closeFollowListModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
@@ -122,9 +159,32 @@
         const targetUserFromUrl = pathParts.length > 2 && pathParts[2] ? pathParts[2] : null;
         let currentProfileUser = null;
         let loggedInUser = null;
+        let myActiveStory = null;
+        let storyTimer = null;
 
         function getDefaultAvatar(sizeClass = "text-xl") {
             return `<div class="w-full h-full bg-slate-200 text-slate-400 flex items-center justify-center"><i class="fa-solid fa-user ${sizeClass}"></i></div>`;
+        }
+
+        function timeAgo(dateString) {
+            if (!dateString) return '방금 전';
+            const formattedDate = dateString.replace(' ', 'T');
+            const past = new Date(formattedDate);
+            const now = new Date();
+
+            if (isNaN(past.getTime())) return '방금 전';
+
+            const diffInSeconds = Math.floor((now - past) / 1000);
+
+            if (diffInSeconds < 60) return '방금 전';
+            const diffInMinutes = Math.floor(diffInSeconds / 60);
+            if (diffInMinutes < 60) return `${diffInMinutes}분 전`;
+            const diffInHours = Math.floor(diffInMinutes / 60);
+            if (diffInHours < 24) return `${diffInHours}시간 전`;
+            const diffInDays = Math.floor(diffInHours / 24);
+            if (diffInDays < 7) return `${diffInDays}일 전`;
+            
+            return `${past.getFullYear()}년 ${past.getMonth() + 1}월 ${past.getDate()}일`;
         }
 
         document.addEventListener("DOMContentLoaded", () => {
@@ -179,13 +239,19 @@
                 document.getElementById('profileEmail').innerText = user.email;
                 uploadBtn.classList.remove('hidden');
                 uploadBtn.classList.add('flex');
-                uploadBtn.onclick = () => document.getElementById('profileImageInput').click();
+                uploadBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    document.getElementById('profileImageInput').click();
+                };
 
                 actionArea.innerHTML = `
                     <button onclick="logout()" class="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg border border-slate-200 transition">
                         로그아웃
                     </button>
                 `;
+
+                // 🌟 본인 프로필인 경우 본인 활성 스토리 검사 및 스토리 링 적용
+                checkMyActiveStory(user.username, user.profile_img);
             } else {
                 document.getElementById('profileEmail').innerText = '';
                 uploadBtn.classList.add('hidden');
@@ -204,6 +270,86 @@
             }
 
             loadUserPosts(user.username);
+        }
+
+        // 🔒 본인 활성 스토리 확인 함수
+        async function checkMyActiveStory(username, profileImg) {
+            try {
+                const storiesRes = await fetch('/api/stories');
+                const storiesData = await storiesRes.json();
+                if (storiesData.status === 'success') {
+                    // 본인이 올린 스토리 검색
+                    const story = storiesData.stories.find(s => s.username === username);
+                    const ringEl = document.getElementById('profileAvatarRing');
+                    
+                    if (story) {
+                        myActiveStory = story;
+                        myActiveStory.profile_img = profileImg;
+                        ringEl.classList.add('story-ring', 'cursor-pointer');
+                        ringEl.onclick = () => openMyStoryModal();
+                    } else {
+                        ringEl.classList.remove('story-ring', 'cursor-pointer');
+                        ringEl.onclick = null;
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // 🔒 본인 스토리 모달 열기
+        function openMyStoryModal() {
+            if (!myActiveStory) return;
+
+            document.getElementById('storyUser').innerText = myActiveStory.username;
+            const avatarBox = document.getElementById('storyAvatarBox');
+            if (myActiveStory.profile_img) {
+                avatarBox.innerHTML = `<img src="${myActiveStory.profile_img}" class="w-full h-full object-cover">`;
+            } else {
+                avatarBox.innerHTML = getDefaultAvatar("text-xs");
+            }
+
+            document.getElementById('storyTimeAgo').innerText = timeAgo(myActiveStory.created_at);
+            document.getElementById('storyTitle').innerText = myActiveStory.title;
+            document.getElementById('storyDesc').innerText = myActiveStory.desc;
+
+            const bg = document.getElementById('storyBg');
+            if (myActiveStory.image_url) {
+                bg.style.backgroundImage = `url('${myActiveStory.image_url}')`;
+            } else {
+                bg.style.backgroundImage = 'none';
+                bg.className = "absolute inset-0 flex flex-col items-center justify-center text-white p-8 text-center bg-gradient-to-br from-pink-500 to-rose-600";
+            }
+
+            const delBtn = document.getElementById('storyDeleteBtn');
+            delBtn.onclick = () => deleteMyStory(myActiveStory.id);
+
+            const modal = document.getElementById('storyModal');
+            const progress = document.getElementById('storyProgress');
+            modal.classList.remove('hidden');
+            progress.classList.remove('animate-progress');
+            void progress.offsetWidth;
+            progress.classList.add('animate-progress');
+
+            clearTimeout(storyTimer);
+            storyTimer = setTimeout(() => closeStoryModal(), 5000);
+        }
+
+        function closeStoryModal() {
+            document.getElementById('storyModal').classList.add('hidden');
+            clearTimeout(storyTimer);
+        }
+
+        function deleteMyStory(storyId) {
+            if (!confirm('정말로 이 스토리를 삭제하시겠습니까?')) return;
+            fetch(`/api/stories/${storyId}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        closeStoryModal();
+                        location.reload();
+                    } else alert(data.message);
+                });
         }
 
         function uploadProfileImage(input) {

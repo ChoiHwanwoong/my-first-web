@@ -62,8 +62,8 @@
         <aside class="hidden md:block space-y-6">
             <div id="profileCard" class="bg-white p-4 border border-slate-200 rounded-xl shadow-sm"></div>
             
-            <!-- 추천 카드 -->
-            <div class="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
+            <!-- 추천 카드 (admin 계정 시 숨김) -->
+            <div id="recommendationCard" class="bg-white p-4 border border-slate-200 rounded-xl shadow-sm">
                 <div class="flex items-center justify-between text-xs font-bold text-slate-900 mb-3">
                     <span>회원님을 위한 맞춤 추천</span>
                     <i class="fa-solid fa-sparkles text-amber-500"></i>
@@ -189,6 +189,9 @@
                         <span id="storyUser" class="font-bold group-hover:underline">username</span>
                         <span id="storyTimeAgo" class="text-white/60 text-[10px]">방금 전</span>
                     </a>
+                    <button id="storyDeleteBtn" class="hidden text-white/70 hover:text-red-400 text-sm transition px-2 py-1" title="스토리 삭제">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
                 </div>
             </div>
 
@@ -202,6 +205,7 @@
     <!-- Scripts -->
     <script>
         let currentUser = null;
+        let isAdminUser = false;
         let isSignupView = false;
         let storyTimer = null;
 
@@ -213,7 +217,6 @@
             checkLoginStatus();
             loadStories();
             loadPosts();
-            loadRecommendations();
             loadHotNews();
         });
 
@@ -245,15 +248,20 @@
                     const card = document.getElementById('profileCard');
                     const headerBtn = document.getElementById('headerProfileBtn');
                     const adminBtn = document.getElementById('headerAdminBtn');
+                    const recoCard = document.getElementById('recommendationCard');
 
                     if (data.logged_in) {
                         currentUser = data.username;
+                        isAdminUser = data.is_admin;
                         headerBtn.classList.remove('hidden');
 
-                        if (data.is_admin) {
+                        if (isAdminUser) {
                             adminBtn.classList.remove('hidden');
+                            recoCard.classList.add('hidden'); // admin 계정 시 추천 카드 숨김
                         } else {
                             adminBtn.classList.add('hidden');
+                            recoCard.classList.remove('hidden');
+                            loadRecommendations();
                         }
                         
                         const avatarHtml = data.profile_img ?
@@ -275,8 +283,12 @@
                         `;
                     } else {
                         currentUser = null;
+                        isAdminUser = false;
                         headerBtn.classList.add('hidden');
                         adminBtn.classList.add('hidden');
+                        recoCard.classList.remove('hidden');
+                        loadRecommendations();
+
                         card.innerHTML = `
                             <p class="text-xs text-slate-500 mb-3 leading-relaxed">로그인하여 Woongstagram의 사진을 공유하고 소통해 보세요.</p>
                             <button onclick="openAuthModal()" class="w-full py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-lg transition shadow-sm">
@@ -316,7 +328,7 @@
                 .then(data => {
                     const list = document.getElementById('recommendationList');
                     list.innerHTML = '';
-                    if (data.status === 'success') {
+                    if (data.status === 'success' && data.recommendations.length > 0) {
                         data.recommendations.forEach(r => {
                             const avatarHtml = r.profile_img ?
                                 `<img src="${r.profile_img}" class="w-full h-full object-cover">` :
@@ -416,6 +428,9 @@
                             `<img src="${post.profile_img}" class="w-full h-full object-cover">` :
                             getDefaultAvatar("text-xs");
 
+                        // 본인 작성글 또는 admin 계정 시 삭제 버튼 표시
+                        const canDelete = currentUser && (currentUser === post.username || isAdminUser);
+
                         article.innerHTML = `
                             <div class="p-3 flex items-center justify-between border-b border-slate-100">
                                 <div class="flex items-center gap-2.5">
@@ -427,6 +442,11 @@
                                     </a>
                                     <span class="text-[11px] text-slate-400">• ${timeAgo(post.created_at)}</span>
                                 </div>
+                                ${canDelete ? `
+                                    <button onclick="deletePost(${post.id})" class="text-slate-400 hover:text-red-500 transition px-1 text-xs" title="게시글 삭제">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                ` : ''}
                             </div>
 
                             ${imageHtml}
@@ -457,6 +477,28 @@
                 });
         }
 
+        function deletePost(postId) {
+            if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
+            fetch(`/api/posts/${postId}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') loadPosts();
+                    else alert(data.message);
+                });
+        }
+
+        function deleteStory(storyId) {
+            if (!confirm('정말로 이 스토리를 삭제하시겠습니까?')) return;
+            fetch(`/api/stories/${storyId}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        closeStoryModal();
+                        loadStories();
+                    } else alert(data.message);
+                });
+        }
+
         function toggleLike(postId) {
             if (!currentUser) { alert('로그인이 필요합니다.'); openAuthModal(); return; }
             fetch(`/api/posts/${postId}/like`, { method: 'POST' })
@@ -472,7 +514,7 @@
                             icon.className = "fa-regular fa-heart cursor-pointer hover:text-slate-400 transition";
                         }
                         count.innerText = `좋아요 ${data.likes}개`;
-                        loadRecommendations();
+                        if (!isAdminUser) loadRecommendations();
                     }
                 });
         }
@@ -492,7 +534,7 @@
                                 ${escapeHtml(c.content)} 
                                 <span class="text-[10px] text-slate-400 ml-1.5">${timeAgo(c.created_at)}</span>
                             </p>
-                            ${currentUser === c.username || currentUser === 'admin' ? `
+                            ${currentUser === c.username || isAdminUser ? `
                                 <button onclick="deleteComment(${c.id}, ${postId})" class="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition px-1" title="삭제">
                                     <i class="fa-solid fa-xmark text-xs"></i>
                                 </button>
@@ -624,6 +666,14 @@
                 avatarBox.innerHTML = getDefaultAvatar("text-xs");
             }
 
+            const delBtn = document.getElementById('storyDeleteBtn');
+            if (currentUser && (currentUser === username || isAdminUser)) {
+                delBtn.classList.remove('hidden');
+                delBtn.onclick = () => deleteStory(storyId);
+            } else {
+                delBtn.classList.add('hidden');
+            }
+
             document.getElementById('storyTimeAgo').innerText = timeAgo(createdAt);
             document.getElementById('storyTitle').innerText = title;
             document.getElementById('storyDesc').innerText = desc;
@@ -676,7 +726,7 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data.status === 'success') { closeAuthModal(); checkLoginStatus(); loadPosts(); loadStories(); loadRecommendations(); }
+                if (data.status === 'success') { closeAuthModal(); checkLoginStatus(); loadPosts(); loadStories(); if(!isAdminUser) loadRecommendations(); }
                 else alert(data.message);
             });
         }
@@ -692,7 +742,7 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data.status === 'success') { closeAuthModal(); checkLoginStatus(); loadPosts(); loadStories(); loadRecommendations(); }
+                if (data.status === 'success') { closeAuthModal(); checkLoginStatus(); loadPosts(); loadStories(); if(!isAdminUser) loadRecommendations(); }
                 else alert(data.message);
             });
         }

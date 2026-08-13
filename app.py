@@ -103,7 +103,6 @@ def init_db():
 
 init_db()
 
-# --- 👑 Admin 세션 검증 헬퍼 함수 ---
 def is_admin():
     return session.get('username') == 'admin'
 
@@ -116,7 +115,6 @@ def index():
 def profile_page(username=None):
     return render_template('profile.html', target_username=username)
 
-# 관리자 페이지 라우트
 @app.route('/admin')
 def admin_page():
     if not is_admin():
@@ -451,10 +449,13 @@ def upload_file():
 # --- 🤖 Recommendation API ---
 @app.route('/api/recommendations', methods=['GET'])
 def get_recommendations():
+    current_user = session.get('username')
+    # admin 계정은 맞춤 추천에서 제외
+    if current_user == 'admin':
+        return jsonify({'status': 'success', 'recommendations': []})
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    
-    current_user = session.get('username')
     recommendations = []
 
     if current_user:
@@ -462,7 +463,7 @@ def get_recommendations():
             SELECT pl2.username, COUNT(*) as common_likes
             FROM post_likes pl1
             JOIN post_likes pl2 ON pl1.post_id = pl2.post_id
-            WHERE pl1.username = ? AND pl2.username != ?
+            WHERE pl1.username = ? AND pl2.username != ? AND pl2.username != 'admin'
             GROUP BY pl2.username
             ORDER BY common_likes DESC
             LIMIT 3
@@ -480,7 +481,7 @@ def get_recommendations():
             })
 
     if len(recommendations) < 3:
-        exclude_users = [current_user] if current_user else []
+        exclude_users = [current_user, 'admin'] if current_user else ['admin']
         exclude_users.extend([r['username'] for r in recommendations])
         
         placeholders = ', '.join(['?'] * len(exclude_users)) if exclude_users else "''"
@@ -559,6 +560,32 @@ def create_story():
     cursor = conn.cursor()
     cursor.execute('INSERT INTO stories (username, title, desc, image_url, created_at) VALUES (?, ?, ?, ?, ?)', 
                    (username, title, desc, image_url, now_str))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'status': 'success'})
+
+# 본인 또는 관리자 스토리 삭제 API
+@app.route('/api/stories/<int:story_id>', methods=['DELETE'])
+def delete_user_story(story_id):
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT username FROM stories WHERE id = ?', (story_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        return jsonify({'status': 'error', 'message': '스토리를 찾을 수 없습니다.'}), 404
+
+    if not is_admin() and row[0] != session['username']:
+        conn.close()
+        return jsonify({'status': 'error', 'message': '삭제 권한이 없습니다.'}), 403
+
+    cursor.execute('DELETE FROM stories WHERE id = ?', (story_id,))
+    cursor.execute('DELETE FROM story_views WHERE story_id = ?', (story_id,))
     conn.commit()
     conn.close()
 
@@ -646,6 +673,33 @@ def get_single_post(post_id):
             'is_liked': liked
         }
     })
+
+# 본인 또는 관리자 게시글 삭제 API
+@app.route('/api/posts/<int:post_id>', methods=['DELETE'])
+def delete_user_post(post_id):
+    if 'username' not in session:
+        return jsonify({'status': 'error', 'message': '로그인이 필요합니다.'}), 401
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT username FROM posts WHERE id = ?', (post_id,))
+    row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        return jsonify({'status': 'error', 'message': '게시글을 찾을 수 없습니다.'}), 404
+
+    if not is_admin() and row[0] != session['username']:
+        conn.close()
+        return jsonify({'status': 'error', 'message': '삭제 권한이 없습니다.'}), 403
+
+    cursor.execute('DELETE FROM posts WHERE id = ?', (post_id,))
+    cursor.execute('DELETE FROM comments WHERE post_id = ?', (post_id,))
+    cursor.execute('DELETE FROM post_likes WHERE post_id = ?', (post_id,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({'status': 'success'})
 
 @app.route('/api/posts/user/<username>', methods=['GET'])
 def get_user_posts(username):
@@ -754,7 +808,6 @@ def delete_comment(comment_id):
     cursor.execute('SELECT username FROM comments WHERE id = ?', (comment_id,))
     row = cursor.fetchone()
 
-    # 관리자는 다른 사람의 댓글도 자유롭게 삭제 가능
     if not is_admin() and (not row or row[0] != session['username']):
         conn.close()
         return jsonify({'status': 'error', 'message': '권한이 없습니다.'}), 403
